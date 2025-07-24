@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUNA MCU Virtual Controller</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>LUNA MCU Virtual Controller</h1>
+        <p class="subtitle">Control Universal Audio LUNA faders via virtual MIDI</p>
+        
+        <div class="fader-group">
+            <div class="fader-label">Fader 1</div>
+            <input type="range" class="fader-slider" id="fader1" min="0" max="127" value="64" oninput="updateFader(1, this.value)">
+            <div class="value-display">Value: <span class="fader-value" id="value1">64</span></div>
+        </div>
+        
+        <div class="fader-group">
+            <div class="fader-label">Fader 2</div>
+            <input type="range" class="fader-slider" id="fader2" min="0" max="127" value="64" oninput="updateFader(2, this.value)">
+            <div class="value-display">Value: <span class="fader-value" id="value2">64</span></div>
+        </div>
+        
+        <div class="fader-group">
+            <div class="fader-label">Fader 3</div>
+            <input type="range" class="fader-slider" id="fader3" min="0" max="127" value="64" oninput="updateFader(3, this.value)">
+            <div class="value-display">Value: <span class="fader-value" id="value3">64</span></div>
+        </div>
+        
+        <div class="status" id="status">Ready - Move sliders to control LUNA faders</div>
+        
+        <div class="info-section">
+            <h3>Instructions:</h3>
+            <ol>
+                <li>Ensure your virtual MIDI port is created and active</li>
+                <li>In LUNA, go to <strong>Preferences → Controllers</strong></li>
+                <li>Add a <strong>Mackie Control Universal</strong> controller</li>
+                <li>Select your virtual MIDI port as the input device</li>
+                <li>Move the sliders above to control LUNA track faders 1-3</li>
+            </ol>
+        </div>
+        
+        <div class="api-info">
+            <h3>HTTP API:</h3>
+            <p>You can also control faders programmatically:</p>
+            <code>GET /api/fader/&lt;fader_number&gt;/&lt;value&gt;</code>
+            <p>Example: <code>curl "http://localhost:5000/api/fader/1/100"</code></p>
+        </div>
+    </div>
+
+    <script>
+        // Global variables for tracking state
+        let lastUpdateTime = 0;
+        const UPDATE_THROTTLE_MS = 50; // Limit updates to 20 per second
+
+        /**
+         * Update a fader value and send MIDI command
+         * @param {number} faderNum - Fader number (1-3)
+         * @param {string|number} value - Fader value (0-127)
+         */
+        async function updateFader(faderNum, value) {
+            // Throttle updates to prevent overwhelming the server
+            const now = Date.now();
+            if (now - lastUpdateTime < UPDATE_THROTTLE_MS) {
+                return;
+            }
+            lastUpdateTime = now;
+
+            // Update the display immediately for responsive UI
+            document.getElementById('value' + faderNum).textContent = value;
+            document.getElementById('status').textContent = 'Sending...';
+            document.getElementById('status').className = 'status sending';
+            
+            try {
+                const response = await fetch(`/api/fader/${faderNum}/${value}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    document.getElementById('status').textContent = 
+                        `✓ Fader ${data.fader} set to ${data.value}`;
+                    document.getElementById('status').className = 'status success';
+                } else {
+                    document.getElementById('status').textContent = 
+                        `Error: ${data.message || 'Unknown error'}`;
+                    document.getElementById('status').className = 'status error';
+                }
+            } catch (error) {
+                console.error('Fader update error:', error);
+                document.getElementById('status').textContent = 
+                    `Network error: ${error.message}`;
+                document.getElementById('status').className = 'status error';
+            }
+        }
+
+        /**
+         * Check MIDI connection status on page load
+         */
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                if (data.connected) {
+                    document.getElementById('status').textContent = 
+                        `Connected to MIDI port: ${data.midi_port}`;
+                    document.getElementById('status').className = 'status success';
+                } else {
+                    document.getElementById('status').textContent = 
+                        `MIDI port "${data.midi_port}" not found. Available ports: ${data.available_ports.join(', ') || 'None'}`;
+                    document.getElementById('status').className = 'status error';
+                }
+            } catch (error) {
+                document.getElementById('status').textContent = 
+                    'Unable to connect to server';
+                document.getElementById('status').className = 'status error';
+            }
+        }
+
+        /**
+         * Initialize keyboard shortcuts
+         */
+        function initKeyboardShortcuts() {
+            document.addEventListener('keydown', function(event) {
+                // Allow keyboard control of faders
+                switch(event.key) {
+                    case '1':
+                        if (event.ctrlKey || event.metaKey) {
+                            event.preventDefault();
+                            document.getElementById('fader1').focus();
+                        }
+                        break;
+                    case '2':
+                        if (event.ctrlKey || event.metaKey) {
+                            event.preventDefault();
+                            document.getElementById('fader2').focus();
+                        }
+                        break;
+                    case '3':
+                        if (event.ctrlKey || event.metaKey) {
+                            event.preventDefault();
+                            document.getElementById('fader3').focus();
+                        }
+                        break;
+                }
+            });
+        }
+
+        // Initialize the application when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('LUNA MCU Virtual Controller initialized');
+            checkStatus();
+            initKeyboardShortcuts();
+            
+            // Set up periodic status checks
+            setInterval(checkStatus, 30000); // Check every 30 seconds
+        });
+    </script>
+</body>
+</html>
