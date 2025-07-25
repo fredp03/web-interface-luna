@@ -16,7 +16,7 @@ import mido
 from mido import Message
 
 # Configuration
-MIDI_PORT_NAME = os.getenv('MIDI_PORT', 'LUNA-MCU')
+MIDI_PORT_NAME = os.getenv('MIDI_PORT', 'IAC Driver Bus 1')
 HOST = '0.0.0.0'  # Listen on all network interfaces for mobile access
 PORT = int(os.getenv('PORT', 5001))  # Use 5001 by default to avoid macOS AirPlay conflict
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
