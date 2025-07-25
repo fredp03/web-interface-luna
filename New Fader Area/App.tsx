@@ -1,10 +1,4 @@
-import svgPaths from "./imports/svg-t6e5grosb4";
 import optionsSvgPaths from "./imports/svg-vjv764u6yl";
-import {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-} from "./components/ui/resizable";
 import {
   useState,
   useRef,
@@ -12,111 +6,6 @@ import {
   useEffect,
 } from "react";
 import { FxControlsView } from "./components/FxControlsView";
-
-function OtherControls({
-  selectedInstrument,
-  onInstrumentSelect,
-}: {
-  selectedInstrument: string;
-  onInstrumentSelect: (instrument: string) => void;
-}) {
-  return (
-    <div
-      className="h-[25px] relative shrink-0 w-[103px]"
-      data-name="Other Controls"
-    >
-      <svg
-        className="block size-full"
-        fill="none"
-        preserveAspectRatio="none"
-        viewBox="0 0 103 25"
-      >
-        <g id="Other Controls">
-          <g id="Headphone Icon">
-            <path
-              d={svgPaths.p6e87800}
-              fill={
-                selectedInstrument === "Headphones"
-                  ? "#e38c54"
-                  : "#653C3C"
-              }
-            />
-            <path
-              d={svgPaths.p1ce17980}
-              fill={
-                selectedInstrument === "Headphones"
-                  ? "#fff2ea"
-                  : "var(--fill-0, #D1D1D1)"
-              }
-            />
-          </g>
-          <g id="Music Icon">
-            <path
-              d={svgPaths.p3c9b9a00}
-              fill={
-                selectedInstrument === "Backing"
-                  ? "#e38c54"
-                  : "#653C3C"
-              }
-            />
-            <path
-              d={svgPaths.p158e3500}
-              fill={
-                selectedInstrument === "Backing"
-                  ? "#fff2ea"
-                  : "var(--fill-0, #D1D1D1)"
-              }
-            />
-          </g>
-        </g>
-      </svg>
-
-      {/* Clickable overlay for headphones icon (left side) */}
-      <div
-        className={`absolute left-0 top-0 w-[40px] h-full cursor-pointer transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 ${selectedInstrument === "Headphones" ? "opacity-100" : "opacity-60 hover:opacity-80"}`}
-        onClick={() => onInstrumentSelect("Headphones")}
-        title="Headphones Level"
-      />
-
-      {/* Clickable overlay for music icon (right side) */}
-      <div
-        className={`absolute right-0 top-0 w-[40px] h-full cursor-pointer transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 ${selectedInstrument === "Backing" ? "opacity-100" : "opacity-60 hover:opacity-80"}`}
-        onClick={() => onInstrumentSelect("Backing")}
-        title="Backing Track Level"
-      />
-    </div>
-  );
-}
-
-function MenuBar({
-  selectedInstrument,
-  onInstrumentSelect,
-}: {
-  selectedInstrument: string;
-  onInstrumentSelect: (instrument: string) => void;
-}) {
-  return (
-    <div
-      className="bg-[#fbfbfb] h-[63px] relative shrink-0 w-full"
-      data-name="Menu Bar"
-    >
-      <div className="absolute border-[0px_0px_1px] border-[rgba(129,129,129,0.59)] border-solid inset-0 pointer-events-none shadow-[0px_1px_4px_0px_rgba(0,0,0,0.25)]" />
-      <div className="flex flex-row items-center relative size-full">
-        <div className="box-border content-stretch flex flex-row h-[63px] items-center justify-between px-[33px] py-2 relative w-full">
-          <div className="flex flex-col font-['Futura:Condensed_ExtraBold',_sans-serif] h-[33px] justify-center leading-[0] not-italic relative shrink-0 text-[#818181] text-[20px] text-center w-50 transition-all duration-300 ease-in-out">
-            <p className="block leading-[normal] text-left">
-              {selectedInstrument}
-            </p>
-          </div>
-          <OtherControls
-            selectedInstrument={selectedInstrument}
-            onInstrumentSelect={onInstrumentSelect}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function DbIndicator({ value }: { value: number }) {
   return (
@@ -443,16 +332,16 @@ function FaderContents({
   );
 }
 
-function OptionsButton({ 
-  onClick, 
-  isActive 
-}: { 
-  onClick: () => void; 
+function OptionsButton({
+  onClick,
+  isActive,
+}: {
+  onClick: () => void;
   isActive: boolean;
 }) {
   return (
     <div
-      className={`absolute bottom-[93.177%] left-[89.583%] right-[4.613%] top-[4.051%] cursor-pointer transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 ${isActive ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
+      className={`absolute bottom-[93.177%] left-[89.583%] right-[4.613%] top-[4.051%] cursor-pointer transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 ${isActive ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
       data-name="Options Icon"
       onClick={onClick}
       title="Options"
@@ -460,7 +349,11 @@ function OptionsButton({
       <div
         className="absolute bottom-[-7.692%] left-[-5.128%] right-[-5.128%] top-[-7.692%]"
         style={
-          { "--stroke-0": isActive ? "#e38c54" : "rgba(129, 129, 129, 1)" } as React.CSSProperties
+          {
+            "--stroke-0": isActive
+              ? "#e38c54"
+              : "rgba(129, 129, 129, 1)",
+          } as React.CSSProperties
         }
       >
         <svg
@@ -473,7 +366,9 @@ function OptionsButton({
           <path
             d={optionsSvgPaths.p2f041600}
             id="Options Icon"
-            stroke={isActive ? "#e38c54" : "var(--stroke-0, #818181)"}
+            stroke={
+              isActive ? "#e38c54" : "var(--stroke-0, #818181)"
+            }
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth="2"
@@ -507,196 +402,20 @@ function FaderArea({
       ) : (
         <FaderContents value={value} onChange={onChange} />
       )}
-      <OptionsButton onClick={handleOptionsClick} isActive={showFxControls} />
-    </div>
-  );
-}
-
-function InstrumentButton({
-  name,
-  isSelected,
-  onClick,
-  gridArea,
-}: {
-  name: string;
-  isSelected: boolean;
-  onClick: () => void;
-  gridArea: string;
-}) {
-  return (
-    <div
-      className={`${gridArea} ${isSelected ? "bg-[#fff2ea]" : "bg-[#e7e7e7]"} h-[47px] ml-0 relative rounded-md w-[151px] cursor-pointer ${!isSelected ? "opacity-[0.76]" : ""} transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-[0.98]`}
-      data-name="Instrument Button"
-      onClick={onClick}
-    >
-      <div className="box-border content-stretch flex flex-row h-[47px] items-center justify-between overflow-clip px-3 py-0 relative w-[151px]">
-        <div className="font-['Futura:Medium',_sans-serif] leading-[0] not-italic relative shrink-0 text-[#383838] text-[15px] text-left text-nowrap transition-all duration-300 ease-in-out">
-          <p className="block leading-[normal] whitespace-pre">
-            {name}
-          </p>
-        </div>
-        <div className="transition-all duration-300 ease-in-out">
-          {isSelected ? (
-            <div
-              className="h-[7px] relative shrink-0 w-2.5"
-              data-name="Done Icon"
-            >
-              <div className="absolute bottom-[-7.143%] left-[-5%] right-[-5%] top-[-7.143%]">
-                <svg
-                  className="block size-full transition-all duration-300 ease-in-out"
-                  fill="none"
-                  preserveAspectRatio="none"
-                  viewBox="0 0 12 9"
-                >
-                  <path
-                    d="M11 1L4.125 8L1 4.81818"
-                    id="Done Icon"
-                    stroke="var(--stroke-0, #383838)"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            </div>
-          ) : (
-            <div
-              className="h-[7.847px] relative shrink-0 w-[8.25px]"
-              data-name="Edit Icon"
-            >
-              <div className="absolute bottom-[-6.372%] left-[-6.061%] right-[-6.061%] top-[-6.372%]">
-                <svg
-                  className="block size-full transition-all duration-300 ease-in-out"
-                  fill="none"
-                  preserveAspectRatio="none"
-                  viewBox="0 0 10 10"
-                >
-                  <path
-                    d={svgPaths.p15739500}
-                    id="Edit Icon"
-                    stroke="var(--stroke-0, #383838)"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-      {isSelected && (
-        <div className="absolute border border-[#e38c54] border-solid inset-0 pointer-events-none rounded-md shadow-[0px_1px_2px_0px_rgba(60,64,67,0.3),0px_2px_6px_2px_rgba(60,64,67,0.15)] transition-all duration-300 ease-in-out" />
-      )}
-      {!isSelected && (
-        <div className="absolute inset-0 pointer-events-none rounded-md shadow-[0px_1px_2px_0px_rgba(60,64,67,0.3),0px_2px_6px_2px_rgba(60,64,67,0.15)] transition-all duration-300 ease-in-out" />
-      )}
-    </div>
-  );
-}
-
-function InstrumentButtons({
-  selectedInstrument,
-  onInstrumentSelect,
-}: {
-  selectedInstrument: string;
-  onInstrumentSelect: (instrument: string) => void;
-}) {
-  const instruments = [
-    { name: "Guitar 1", gridArea: "[grid-area:1_/_1] mt-0" },
-    {
-      name: "Guitar 2",
-      gridArea: "[grid-area:1_/_1] mt-[78px]",
-    },
-    {
-      name: "Guitar 3",
-      gridArea: "[grid-area:1_/_1] mt-[163px]",
-    },
-  ];
-
-  return (
-    <div
-      className="grid-cols-[max-content] grid-rows-[max-content] inline-grid leading-[0] place-items-start relative shrink-0"
-      data-name="Instrument Buttons"
-    >
-      {instruments.map((instrument) => (
-        <InstrumentButton
-          key={instrument.name}
-          name={instrument.name}
-          isSelected={selectedInstrument === instrument.name}
-          onClick={() => onInstrumentSelect(instrument.name)}
-          gridArea={instrument.gridArea}
-        />
-      ))}
-    </div>
-  );
-}
-
-function Contents() {
-  const [selectedInstrument, setSelectedInstrument] =
-    useState("Guitar 1");
-
-  // Store fader levels for each instrument and control type
-  const [instrumentLevels, setInstrumentLevels] = useState({
-    "Guitar 1": 0, // Start at 0 dB
-    "Guitar 2": 0, // Start at 0 dB
-    "Guitar 3": 0, // Start at 0 dB
-    Headphones: 0, // Start at 0 dB
-    Backing: 0, // Start at 0 dB
-  });
-
-  // Get current instrument's fader level
-  const currentFaderLevel =
-    instrumentLevels[selectedInstrument];
-
-  // Update fader level for current instrument
-  const handleFaderChange = (value: number) => {
-    setInstrumentLevels((prev) => ({
-      ...prev,
-      [selectedInstrument]: value,
-    }));
-  };
-
-  return (
-    <div
-      className="box-border content-stretch flex flex-col gap-14 items-center justify-start p-4 w-full h-full overflow-auto"
-      data-name="Contents"
-    >
-      <MenuBar
-        selectedInstrument={selectedInstrument}
-        onInstrumentSelect={setSelectedInstrument}
-      />
-      <FaderArea
-        value={currentFaderLevel}
-        onChange={handleFaderChange}
-      />
-      <InstrumentButtons
-        selectedInstrument={selectedInstrument}
-        onInstrumentSelect={setSelectedInstrument}
+      <OptionsButton
+        onClick={handleOptionsClick}
+        isActive={showFxControls}
       />
     </div>
   );
 }
 
 export default function App() {
+  const [faderLevel, setFaderLevel] = useState(0); // Start at 0 dB
+
   return (
-    <div className="h-screen w-screen bg-[#f0f0f0] p-4">
-      <ResizablePanelGroup
-        direction="horizontal"
-        className="h-full w-full"
-      >
-        <ResizablePanel defaultSize={50} minSize={30}>
-          <div className="h-full w-full bg-[#f9f9f9] overflow-clip relative rounded-[10px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-            <Contents />
-          </div>
-        </ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={50} minSize={30}>
-          <div className="h-full w-full bg-gray-100 rounded-[10px] border-2 border-dashed border-gray-300 flex items-center justify-center">
-            <p className="text-gray-500">
-              Drag the handle to resize the music interface
-            </p>
-          </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+    <div className="h-screen w-screen bg-[#f0f0f0] flex items-center justify-center p-4">
+      <FaderArea value={faderLevel} onChange={setFaderLevel} />
     </div>
   );
 }
