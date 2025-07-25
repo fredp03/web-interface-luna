@@ -233,12 +233,19 @@
 
         // Send MIDI command
         async function sendMidiCommand(instrumentName, value) {
-            // Only send MIDI for actual faders, not headphones/backing
-            if (!instrumentName.startsWith('Fader')) {
+            // Determine endpoint based on selected control
+            let endpoint = null;
+
+            if (instrumentName.startsWith('Fader')) {
+                const faderNumber = parseInt(instrumentName.split(' ')[1]);
+                endpoint = `/api/fader/${faderNumber}/${value}`;
+            } else if (instrumentName === 'Backing') {
+                endpoint = `/api/fader/4/${value}`;
+            } else if (instrumentName === 'Headphones') {
+                endpoint = `/api/fader/5/${value}`;
+            } else {
                 return { status: 'ok', message: 'Control updated (no MIDI)' };
             }
-
-            const faderNumber = parseInt(instrumentName.split(' ')[1]);
             
             // Throttle updates to prevent overwhelming the server
             const now = Date.now();
@@ -251,7 +258,7 @@
             document.getElementById('status').className = 'status sending';
             
             try {
-                const response = await fetch(`/api/fader/${faderNumber}/${value}`, {
+                const response = await fetch(endpoint, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',

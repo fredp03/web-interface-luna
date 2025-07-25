@@ -5,9 +5,10 @@ A web-based virtual MIDI controller that implements Mackie Control Universal (MC
 ## What it does
 
 This application creates a virtual MIDI output port and provides:
-- A Flask web server with HTTP endpoints for controlling 3 MCU faders
+- A Flask web server with HTTP endpoints for controlling five faders
 - A simple web interface with sliders that send MIDI commands to LUNA
-- Proper MCU protocol implementation using pitch-bend messages for fader control
+- Proper MCU protocol implementation using pitch-bend messages for track faders
+  and MIDI CC messages for Backing and Headphones levels
 
 ## Why use this?
 
@@ -87,8 +88,9 @@ The MIDI port name can be configured in two ways:
 ## Usage
 
 ### Web Interface
-- Use the three sliders labeled **Fader 1**, **Fader 2**, and **Fader 3**
-- Each slider controls the corresponding track fader in LUNA
+- Use the sliders labeled **Fader 1**, **Fader 2**, **Fader 3**, **Backing**, and **Headphones**
+- Faders 1‑3 control the corresponding track faders in LUNA
+- The Backing and Headphones sliders send MIDI CC4 and CC5 messages
 - Values range from 0-127 (MIDI standard)
 - The current value is displayed next to each slider
 
@@ -104,6 +106,11 @@ curl "http://localhost:5000/api/fader/2/64"
 
 # Set fader 3 to minimum (0)
 curl "http://localhost:5000/api/fader/3/0"
+# Set Backing level (fader 4) to 80
+curl "http://localhost:5000/api/fader/4/80"
+
+# Set Headphones level (fader 5) to 100
+curl "http://localhost:5000/api/fader/5/100"
 ```
 
 **Response format:**
@@ -142,6 +149,8 @@ curl "http://localhost:5000/api/fader/3/0"
 
 - **MIDI Protocol**: Implements MCU fader control using pitch-bend messages (0xE0 + channel)
 - **Channels**: Fader 1 = Channel 0, Fader 2 = Channel 1, Fader 3 = Channel 2
+  (pitch bend). Backing (Fader 4) uses MIDI CC4 and Headphones (Fader 5)
+  uses MIDI CC5 on channel 0
 - **Value Encoding**: 14-bit values split into LSB and MSB bytes
 - **Port**: Web server runs on `http://localhost:5000`
 

@@ -69,16 +69,7 @@ def initialize_midi():
 
 
 def send_mcu_fader_message(fader_number, value):
-    """
-    Send MCU fader control message via MIDI pitch bend
-    
-    Args:
-        fader_number (int): Fader number (1-3)
-        value (int): Fader value (0-127)
-    
-    Returns:
-        bool: True if message sent successfully, False otherwise
-    """
+    """Send MCU fader control message via MIDI pitch bend."""
     if not midi_out:
         logger.error("MIDI output not initialized")
         return False
@@ -104,9 +95,27 @@ def send_mcu_fader_message(fader_number, value):
                    f"(pitch_value: {pitch_value})")
         
         return True
-        
+
     except Exception as e:
         logger.error(f"Error sending MIDI message: {e}")
+        return False
+
+
+def send_cc_message(control_number, value, channel=0):
+    """Send a standard MIDI control change message."""
+    if not midi_out:
+        logger.error("MIDI output not initialized")
+        return False
+
+    try:
+        msg = Message('control_change', channel=channel, control=control_number, value=value)
+        midi_out.send(msg)
+        logger.info(
+            f"Sent CC{control_number} on channel {channel}: value={value}"
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Error sending CC message: {e}")
         return False
 
 
@@ -184,20 +193,20 @@ def index():
 @app.route('/api/fader/<int:fader_number>/<int:value>')
 def control_fader(fader_number, value):
     """
-    HTTP endpoint to control MCU faders
+    HTTP endpoint to control faders and other parameters
     
     Args:
-        fader_number (int): Fader number (1-3)
+        fader_number (int): Fader number (1-5)
         value (int): Fader value (0-127)
     
     Returns:
         JSON response with status
     """
     # Validate inputs
-    if fader_number not in [1, 2, 3]:
+    if fader_number not in [1, 2, 3, 4, 5]:
         return jsonify({
             "status": "error",
-            "message": "Invalid fader number. Must be 1, 2, or 3."
+            "message": "Invalid fader number. Must be 1-5."
         }), 400
     
     if not (0 <= value <= 127):
@@ -206,8 +215,15 @@ def control_fader(fader_number, value):
             "message": "Invalid value. Must be between 0 and 127."
         }), 400
     
-    # Send MIDI message
-    success = send_mcu_fader_message(fader_number, value)
+    # Send MIDI message based on fader number
+    if fader_number in [1, 2, 3]:
+        success = send_mcu_fader_message(fader_number, value)
+    elif fader_number == 4:
+        success = send_cc_message(4, value)
+    elif fader_number == 5:
+        success = send_cc_message(5, value)
+    else:
+        success = False
     
     if success:
         return jsonify({
