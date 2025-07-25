@@ -14,11 +14,13 @@ import logging
 from flask import Flask, jsonify, render_template_string
 import mido
 from mido import Message
+import threading
 
 # Configuration
 MIDI_PORT_NAME = os.getenv('MIDI_PORT', 'IAC Driver Bus 1')
 HOST = '0.0.0.0'  # Listen on all network interfaces for mobile access
-PORT = int(os.getenv('PORT', 5001))  # Use 5001 by default to avoid macOS AirPlay conflict
+PORT = int(os.getenv('PORT', 5001))  # Main server port
+SECOND_PORT = int(os.getenv('PORT2', 5002))  # Secondary server port
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 # Set up logging
@@ -28,8 +30,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize Flask app
+# Initialize Flask apps
 app = Flask(__name__)
+cc_app = Flask(__name__ + '_cc')
 
 # Global MIDI output port
 midi_out = None
@@ -119,14 +122,11 @@ def send_cc_message(control_number, value, channel=0):
         return False
 
 
-@app.route('/')
-def index():
-    """Serve the main web interface"""
-    # Read the HTML template from static folder
+def load_index_html():
+    """Load the main web interface HTML."""
     try:
         with open('static/index.html', 'r') as f:
-            html_content = f.read()
-        return html_content
+            return f.read()
     except FileNotFoundError:
         # Fallback to embedded HTML if static file not found
         return render_template_string("""
@@ -190,6 +190,18 @@ def index():
         """)
 
 
+@app.route('/')
+def index():
+    """Serve the main web interface for the primary server."""
+    return load_index_html()
+
+
+@cc_app.route('/')
+def cc_index():
+    """Serve the web interface for the secondary server."""
+    return load_index_html()
+
+
 @app.route('/api/fader/<int:fader_number>/<int:value>')
 def control_fader(fader_number, value):
     """
@@ -238,6 +250,29 @@ def control_fader(fader_number, value):
         }), 500
 
 
+@cc_app.route('/api/fader/<int:fader_number>/<int:value>')
+def control_fader_cc(fader_number, value):
+    """Control faders using MIDI CCs 6-10 on the secondary server."""
+    if fader_number not in [1, 2, 3, 4, 5]:
+        return jsonify({
+            "status": "error",
+            "message": "Invalid fader number. Must be 1-5."
+        }), 400
+
+    if not (0 <= value <= 127):
+        return jsonify({
+            "status": "error",
+            "message": "Invalid value. Must be between 0 and 127."
+        }), 400
+
+    cc_number = fader_number + 5  # Map 1-5 -> 6-10
+    success = send_cc_message(cc_number, value)
+
+    if success:
+        return jsonify({"status": "ok", "fader": fader_number, "value": value})
+    return jsonify({"status": "error", "message": "Failed to send MIDI message"}), 500
+
+
 @app.route('/api/status')
 def get_status():
     """Get MIDI connection status"""
@@ -246,6 +281,12 @@ def get_status():
         "connected": midi_out is not None,
         "available_ports": mido.get_output_names()
     })
+
+
+@cc_app.route('/api/status')
+def get_status_cc():
+    """Get MIDI connection status for the secondary server."""
+    return get_status()
 
 
 def cleanup():
@@ -270,17 +311,24 @@ if __name__ == '__main__':
             exit(1)
         
         logger.info(f"Starting web server on {HOST}:{PORT}")
-        logger.info(f"Open http://{HOST}:{PORT} in your browser")
-        
-        # Start Flask app
-        try:
-            app.run(host=HOST, port=PORT, debug=DEBUG)
-        except KeyboardInterrupt:
-            logger.info("Received shutdown signal")
-        finally:
-            cleanup()
-            
+        logger.info(f"Starting secondary server on {HOST}:{SECOND_PORT}")
+        logger.info(f"Open http://{HOST}:{PORT} and http://{HOST}:{SECOND_PORT} in your browser")
+
+        def run_server(flask_app, port):
+            flask_app.run(host=HOST, port=port, debug=DEBUG, use_reloader=False)
+
+        # Start both Flask apps in separate threads
+        thread1 = threading.Thread(target=run_server, args=(app, PORT), daemon=True)
+        thread2 = threading.Thread(target=run_server, args=(cc_app, SECOND_PORT), daemon=True)
+        thread1.start()
+        thread2.start()
+
+        # Wait for servers
+        thread1.join()
+        thread2.join()
+    except KeyboardInterrupt:
+        logger.info("Received shutdown signal")
     except Exception as e:
         logger.error(f"Application error: {e}")
+    finally:
         cleanup()
-        exit(1)

@@ -8,6 +8,10 @@
    ```
    http://10.0.0.221:5001
    ```
+   or for the secondary controller
+   ```
+   http://10.0.0.221:5002
+   ```
 
 3. **For easier access, add to home screen:**
    - Tap the Share button in Safari
@@ -23,7 +27,7 @@
    - Set Input to "IAC Driver Bus 1"
 
 ## Network Access URL:
-**http://10.0.0.221:5001**
+**http://10.0.0.221:5001** (primary) or **http://10.0.0.221:5002** (secondary)
 
 ## Troubleshooting:
 
@@ -39,6 +43,7 @@
 
 ## Advanced Usage:
 You can also control faders via direct URL calls:
-- `http://10.0.0.221:5001/api/fader/1/100` - Set fader 1 to 100
-- `http://10.0.0.221:5001/api/fader/2/64` - Set fader 2 to 64
-- `http://10.0.0.221:5001/api/fader/3/0` - Set fader 3 to 0
+- `http://10.0.0.221:5001/api/fader/1/100` - Set fader 1 to 100 (CC1)
+- `http://10.0.0.221:5001/api/fader/2/64` - Set fader 2 to 64 (CC2)
+- `http://10.0.0.221:5001/api/fader/3/0` - Set fader 3 to 0 (CC3)
+- `http://10.0.0.221:5002/api/fader/1/127` - Set fader 1 to 127 (CC6)

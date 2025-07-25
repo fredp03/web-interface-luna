@@ -78,7 +78,8 @@ The MIDI port name can be configured in two ways:
    ```
 
 2. **Open the web interface:**
-   Navigate to `http://localhost:5000` in your web browser
+   Navigate to `http://localhost:5001` in your web browser for the primary
+   controller, or `http://localhost:5002` for the secondary one
 
 3. **Configure LUNA:**
    - In LUNA, go to **Preferences → Controllers**
@@ -99,18 +100,18 @@ Send GET requests to control faders programmatically:
 
 ```bash
 # Set fader 1 to value 100
-curl "http://localhost:5000/api/fader/1/100"
+curl "http://localhost:5001/api/fader/1/100"
 
 # Set fader 2 to value 64 (center position)
-curl "http://localhost:5000/api/fader/2/64"
+curl "http://localhost:5001/api/fader/2/64"
 
 # Set fader 3 to minimum (0)
-curl "http://localhost:5000/api/fader/3/0"
+curl "http://localhost:5001/api/fader/3/0"
 # Set Backing level (fader 4) to 80
-curl "http://localhost:5000/api/fader/4/80"
+curl "http://localhost:5001/api/fader/4/80"
 
 # Set Headphones level (fader 5) to 100
-curl "http://localhost:5000/api/fader/5/100"
+curl "http://localhost:5001/api/fader/5/100"
 ```
 
 **Response format:**
@@ -132,9 +133,9 @@ curl "http://localhost:5000/api/fader/5/100"
 - Ensure the controller type is set to "Mackie Control Universal"
 - Try restarting LUNA after configuring the controller
 
-**Web interface not loading:**
-- Check if another application is using port 5000
-- Try accessing `http://127.0.0.1:5000` instead of localhost
+-**Web interface not loading:**
+- Check if another application is using port 5001 or 5002
+- Try accessing `http://127.0.0.1:5001` instead of localhost
 - Verify the Flask server started without errors
 
 **Permission errors on Linux:**
@@ -142,7 +143,7 @@ curl "http://localhost:5000/api/fader/5/100"
 - Log out and back in for changes to take effect
 
 **Firewall blocking connections:**
-- Add an exception for Python or port 5000 in your firewall settings
+- Add an exception for Python or ports 5001 and 5002 in your firewall settings
 - On macOS, you may see a security prompt when first running the app
 
 ## Technical Details
@@ -152,7 +153,7 @@ curl "http://localhost:5000/api/fader/5/100"
   (pitch bend). Backing (Fader 4) uses MIDI CC4 and Headphones (Fader 5)
   uses MIDI CC5 on channel 0
 - **Value Encoding**: 14-bit values split into LSB and MSB bytes
-- **Port**: Web server runs on `http://localhost:5000`
+- **Port**: Web servers run on `http://localhost:5001` and `http://localhost:5002`
 
 ## License
 
