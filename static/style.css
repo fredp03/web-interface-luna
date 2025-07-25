@@ -1,6 +1,12 @@
-/* LUNA MCU Virtual Controller Styles */
+/* LUNA MCU Virtual Controller Styles - Professional Music Interface */
 
-/* Base styles */
+/* Reset and base styles */
+html {
+    overflow-x: hidden; /* Prevent horizontal scrolling on html element */
+    width: 100%;
+    height: 100%;
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -11,40 +17,639 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     line-height: 1.6;
     color: #333;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: #f9f9f9; /* Use the same background as app container */
     min-height: 100vh;
-    padding: 20px;
+    min-height: -webkit-fill-available; /* iOS Safari viewport fix */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); /* Only safe area padding */
+    overflow-x: hidden;
+    overflow-y: auto; /* Allow vertical scrolling but prevent horizontal */
+    -webkit-overflow-scrolling: touch;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    margin: 0; /* Remove any default margin */
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box; /* Ensure padding is included in width calculation */
 }
 
-/* Container */
-.container {
-    max-width: 700px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+/* Main app container */
+.app-container {
+    height: 100vh;
+    height: -webkit-fill-available; /* iOS Safari viewport fix */
+    width: 100%;
+    max-width: 100%; /* Prevent overflow */
+    margin: 0 auto; /* Center the container */
+    background: #f9f9f9;
+    overflow: hidden;
+    border-radius: 0; /* Remove border radius for full screen */
+    box-shadow: none; /* Remove shadow for full screen */
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    -webkit-transform: translateZ(0); /* Hardware acceleration for iOS */
+    transform: translateZ(0);
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+/* Menu Bar */
+.menu-bar {
+    background: #fbfbfb;
+    height: 63px;
+    border-bottom: 1px solid rgba(129, 129, 129, 0.59);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    flex-shrink: 0;
+    width: 100%;
+}
+
+.menu-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    padding: 8px 33px;
+}
+
+.selected-instrument {
+    font-family: 'Futura', 'Arial Narrow', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    color: #818181;
+    text-align: left;
+    height: 33px;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease-in-out;
+}
+
+.other-controls {
+    display: flex;
+    align-items: center;
+    height: 25px;
+    width: 103px;
+    gap: 23px;
+}
+
+.control-icon {
+    width: 40px;
+    height: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    opacity: 0.6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+}
+
+.control-icon:hover {
+    transform: scale(1.1);
+    opacity: 0.8;
+}
+
+.control-icon.selected {
+    opacity: 1;
+}
+
+.control-icon svg {
+    width: 20px;
+    height: 20px;
+    color: #653C3C;
+    transition: color 0.3s ease-in-out;
+}
+
+.control-icon.selected svg {
+    color: #e38c54;
+}
+
+/* Main content area */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 56px;
+    padding: 16px;
+    overflow-y: auto;
+    overflow-x: hidden; /* Prevent horizontal overflow */
+    width: 100%;
+}
+
+/* Fader Area */
+.fader-area {
+    background: #e8e8e8;
+    height: 469px;
+    width: 100%;
+    max-width: 400px; /* Constrain fader area width instead */
+    margin: 0 auto; /* Center the fader area */
+    border-radius: 9px;
+    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+    position: relative;
+    flex-shrink: 0;
+}
+
+.fader-contents {
+    position: absolute;
+    left: 50%;
+    top: 19px;
+    width: 226px;
+    transform: translateX(-50%); /* Center horizontally */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Current dB Display */
+.current-db-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 31px;
+    flex-shrink: 0;
+}
+
+.db-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    justify-content: center;
+    gap: 3px;
+    text-align: right;
+}
+
+.db-value {
+    font-family: 'Futura', 'Arial Narrow', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: #383838;
+    transition: all 0.4s ease-out;
+    white-space: nowrap;
+}
+
+.db-unit {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    color: #818181;
+    white-space: nowrap;
+}
+
+/* Fader wrapper main container */
+.fader-wrapper-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+/* dB Range labels */
+.fader-db-range {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 318px;
+    width: 19px;
+    font-family: 'Futura', sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    color: #818181;
+    opacity: 0.68;
+    text-align: left;
+    flex-shrink: 0;
+}
+
+/* Fader wrapper */
+.fader-wrapper {
+    background: #d5d5d5;
+    width: 69px;
+    height: 359px;
+    border-radius: 5px;
+    padding: 13px 6px;
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: 
+        -1px 1px 2px inset rgba(158, 158, 158, 0.2),
+        1px -1px 2px inset rgba(158, 158, 158, 0.2),
+        -1px -1px 2px inset rgba(255, 255, 255, 0.9),
+        1px 1px 3px inset rgba(158, 158, 158, 0.9);
+}
+
+.fader-container {
+    width: 100%;
+    height: 332.667px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    padding: 0 3px;
+}
+
+/* Fader tracks */
+.fader-track-top {
+    background: #c7c7c7;
+    width: 23px;
+    border-radius: 3px;
+    box-shadow: 
+        -1px 1px 2px inset rgba(147, 147, 147, 0.2),
+        1px -1px 2px inset rgba(147, 147, 147, 0.2),
+        -1px -1px 2px inset rgba(251, 251, 251, 0.9),
+        1px 1px 3px inset rgba(147, 147, 147, 0.9);
+    transition: height 0.3s ease-out;
+}
+
+.fader-track-bottom {
+    background: #e38c54;
+    width: 23px;
+    border-radius: 3px;
+    box-shadow: 
+        -1px 1px 2px inset rgba(161, 99, 60, 0.2),
+        1px -1px 2px inset rgba(161, 99, 60, 0.2),
+        -1px -1px 2px inset rgba(255, 181, 108, 0.9),
+        1px 1px 3px inset rgba(161, 99, 60, 0.9);
+    transition: height 0.3s ease-out;
+}
+
+/* Disable transitions during dragging */
+.fader-track-top.no-transition,
+.fader-track-bottom.no-transition {
+    transition: none;
+}
+
+/* Fader handle */
+.fader-handle {
+    background: #dedede;
+    width: 36px;
+    height: 20px;
+    border-radius: 4px;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 10;
+    box-shadow: 
+        0 1px 2px rgba(60, 64, 67, 0.3),
+        0 2px 6px 2px rgba(60, 64, 67, 0.15);
+    flex-shrink: 0;
+    touch-action: none; /* Prevent default touch behaviors */
+    -webkit-transform: translateZ(0); /* Hardware acceleration */
+    transform: translateZ(0);
+}
+
+.fader-handle:active {
+    cursor: grabbing;
+    -webkit-transform: translateZ(0) scale(1.02); /* Slight scale on touch for iOS feedback */
+    transform: translateZ(0) scale(1.02);
+}
+
+.fader-handle:hover:not(:active) {
+    transform: scale(1.05);
+    transition: transform 0.2s ease-out;
+}
+
+/* Spacer */
+.spacer {
+    background: transparent;
+    height: 318px;
+    width: 19px;
+    flex-shrink: 0;
+}
+
+/* Instrument Buttons */
+.instrument-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    flex-shrink: 0;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.instrument-button {
+    background: #e7e7e7;
+    height: 47px;
+    width: 151px;
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0.76;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 
+        0 1px 2px rgba(60, 64, 67, 0.3),
+        0 2px 6px 2px rgba(60, 64, 67, 0.15);
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    touch-action: manipulation; /* Optimize for touch */
+}
+
+.instrument-button:hover {
+    transform: scale(1.02);
+}
+
+.instrument-button:active {
+    transform: scale(0.98);
+}
+
+.instrument-button.selected {
+    background: #fff2ea;
+    opacity: 1;
+    border: 1px solid #e38c54;
+    box-shadow: 
+        0 1px 2px rgba(60, 64, 67, 0.3),
+        0 2px 6px 2px rgba(60, 64, 67, 0.15);
+}
+
+.button-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    padding: 0 12px;
     overflow: hidden;
 }
 
-/* Header */
-h1 {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    text-align: center;
-    padding: 30px 20px 20px;
-    margin: 0;
-    font-size: 2.2em;
-    font-weight: 300;
-    letter-spacing: -0.5px;
+.button-text {
+    font-family: 'Futura', sans-serif;
+    font-weight: 500;
+    font-size: 15px;
+    color: #383838;
+    text-align: left;
+    white-space: nowrap;
+    transition: all 0.3s ease-in-out;
 }
 
-.subtitle {
+.button-icon {
+    width: 10px;
+    height: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease-in-out;
+}
+
+.done-icon {
+    width: 10px;
+    height: 7px;
+    stroke: #383838;
+    stroke-width: 1.5;
+}
+
+.edit-icon {
+    width: 8.25px;
+    height: 7.847px;
+    stroke: #383838;
+    stroke-width: 1.5;
+}
+
+/* Status area */
+.status {
+    margin: 12px 20px;
+    padding: 12px 16px;
+    border-radius: 8px;
     text-align: center;
-    color: rgba(255, 255, 255, 0.9);
-    margin: 0;
-    padding: 0 20px 30px;
-    font-size: 1.1em;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+    background: #e8f5e8;
+    color: #2e7d32;
+    flex-shrink: 0;
+    display: none; /* Hide by default */
+}
+
+.status.success {
+    background: #d1edff;
+    color: #0c5460;
+    border-color: #bee5eb;
+    display: none; /* Hide success messages */
+}
+
+.status.error {
+    background: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+    display: block; /* Only show error messages */
+}
+
+.status.sending {
+    background: #fff3cd;
+    color: #856404;
+    border-color: #ffeaa7;
+    display: none; /* Hide sending messages */
+}
+
+/* Responsive design for iPhone */
+@media (max-width: 480px) {
+    body {
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .app-container {
+        height: 100vh;
+        height: -webkit-fill-available;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .main-content {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+        overflow-x: hidden;
+    }
+    
+    .fader-area {
+        width: 100%;
+        max-width: 400px; /* Restore max-width constraint */
+        margin: 0 auto; /* Center the fader area */
+        border-radius: 9px; /* Restore border radius */
+        box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25); /* Restore shadow */
+        box-sizing: border-box;
+    }
+    
+    .fader-contents {
+        left: 50%;
+        width: 80%;
+        transform: translateX(-50%); /* Center horizontally */
+    }
+    
+    .menu-content {
+        padding: 8px 16px;
+        box-sizing: border-box;
+    }
+    
+    .selected-instrument {
+        font-size: 18px;
+    }
+    
+    /* Increase touch targets for iPhone */
+    .fader-handle {
+        width: 44px; /* Apple's recommended minimum touch target */
+        height: 24px;
+    }
+    
+    .instrument-button {
+        height: 52px; /* Larger touch target */
+        min-height: 44px;
+        width: 120px; /* Slightly smaller for horizontal layout */
+        flex: 1;
+        min-width: 100px;
+        box-sizing: border-box;
+    }
+    
+    .control-icon {
+        width: 44px;
+        height: 44px;
+    }
+}
+
+@media (max-width: 360px) {
+    .fader-area {
+        height: 400px;
+        width: 100%;
+        max-width: 360px; /* Add max-width constraint */
+        margin: 0 auto; /* Center the fader area */
+        border-radius: 9px; /* Restore border radius */
+        box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25); /* Restore shadow */
+    }
+    
+    .fader-contents {
+        left: 50%;
+        width: 84%;
+        transform: translateX(-50%); /* Center horizontally */
+    }
+    
+    .fader-wrapper {
+        width: 60px;
+        height: 300px;
+    }
+    
+    .fader-container {
+        height: 274px;
+    }
+    
+    .fader-db-range {
+        height: 260px;
+    }
+    
+    .spacer {
+        height: 260px;
+    }
+    
+    .instrument-button {
+        width: 100px;
+        height: 52px;
+        flex: 1;
+        min-width: 80px;
+    }
+    
+    .fader-handle {
+        width: 44px;
+        height: 24px;
+    }
+}
+
+/* iPhone X and newer with notch support */
+@media only screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) {
+    body {
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+}
+
+/* iPhone Pro Max support */
+@media only screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) {
+    body {
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #2d2d2d; /* Match app container background in dark mode */
+        color: #e0e0e0;
+    }
+    
+    .app-container {
+        background: #2d2d2d;
+    }
+    
+    .menu-bar {
+        background: #333;
+        border-bottom-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .selected-instrument {
+        color: #b0b0b0;
+    }
+    
+    .fader-area {
+        background: #404040;
+    }
+    
+    .fader-wrapper {
+        background: #505050;
+    }
+    
+    .instrument-button {
+        background: #444;
+    }
+    
+    .instrument-button.selected {
+        background: #2a1810;
+    }
+    
+    .button-text {
+        color: #e0e0e0;
+    }
+    
+    .db-value {
+        color: #e0e0e0;
+    }
+    
+    .db-unit, .fader-db-range {
+        color: #b0b0b0;
+    }
+    
+    .status {
+        background: #333;
+        color: #e0e0e0;
+        border-color: #555;
+    }
+}
+
+/* Animation for smooth transitions */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.app-container {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Focus styles for accessibility */
+.fader-handle:focus,
+.instrument-button:focus,
+.control-icon:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
 }
 
 /* Fader groups */
@@ -81,8 +686,8 @@ h1 {
 /* Slider styles */
 .fader-slider {
     width: 100%;
-    height: 8px;
-    border-radius: 4px;
+    height: 12px;  /* Increased height for mobile */
+    border-radius: 6px;
     background: #e9ecef;
     outline: none;
     margin: 15px 0;
@@ -90,6 +695,7 @@ h1 {
     transition: background 0.2s ease;
     -webkit-appearance: none;
     appearance: none;
+    touch-action: manipulation;  /* Better touch handling */
 }
 
 .fader-slider:hover {
@@ -99,8 +705,8 @@ h1 {
 .fader-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 24px;
-    height: 24px;
+    width: 32px;  /* Larger thumb for mobile */
+    height: 32px;
     border-radius: 50%;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     cursor: pointer;
@@ -114,8 +720,8 @@ h1 {
 }
 
 .fader-slider::-moz-range-thumb {
-    width: 24px;
-    height: 24px;
+    width: 32px;  /* Larger thumb for mobile */
+    height: 32px;
     border-radius: 50%;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     cursor: pointer;
