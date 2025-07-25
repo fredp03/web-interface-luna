@@ -208,17 +208,18 @@ def control_fader(fader_number, value):
     HTTP endpoint to control faders and other parameters
     
     Args:
-        fader_number (int): Fader number (1-5)
+        fader_number (int): Fader number
         value (int): Fader value (0-127)
     
     Returns:
         JSON response with status
     """
     # Validate inputs
-    if fader_number not in [1, 2, 3, 4, 5]:
+    valid_faders = {1, 2, 3, 4, 5, 11, 12, 13}
+    if fader_number not in valid_faders:
         return jsonify({
             "status": "error",
-            "message": "Invalid fader number. Must be 1-5."
+            "message": "Invalid fader number."
         }), 400
     
     if not (0 <= value <= 127):
@@ -228,14 +229,10 @@ def control_fader(fader_number, value):
         }), 400
     
     # Send MIDI message based on fader number
-    if fader_number in [1, 2, 3]:
-        success = send_mcu_fader_message(fader_number, value)
-    elif fader_number == 4:
-        success = send_cc_message(4, value)
-    elif fader_number == 5:
-        success = send_cc_message(5, value)
+    if fader_number in [4, 5]:
+        success = send_cc_message(4 if fader_number == 4 else 5, value)
     else:
-        success = False
+        success = send_mcu_fader_message(fader_number, value)
     
     if success:
         return jsonify({
@@ -252,11 +249,12 @@ def control_fader(fader_number, value):
 
 @cc_app.route('/api/fader/<int:fader_number>/<int:value>')
 def control_fader_cc(fader_number, value):
-    """Control faders using MIDI CCs 6-10 on the secondary server."""
-    if fader_number not in [1, 2, 3, 4, 5]:
+    """Control faders on the secondary server."""
+    valid_faders = {1, 2, 3, 4, 5, 14, 15, 16}
+    if fader_number not in valid_faders:
         return jsonify({
             "status": "error",
-            "message": "Invalid fader number. Must be 1-5."
+            "message": "Invalid fader number."
         }), 400
 
     if not (0 <= value <= 127):
@@ -265,8 +263,11 @@ def control_fader_cc(fader_number, value):
             "message": "Invalid value. Must be between 0 and 127."
         }), 400
 
-    cc_number = fader_number + 5  # Map 1-5 -> 6-10
-    success = send_cc_message(cc_number, value)
+    if fader_number in [14, 15, 16]:
+        success = send_mcu_fader_message(fader_number, value)
+    else:
+        cc_number = fader_number + 5  # Map 1-5 -> 6-10
+        success = send_cc_message(cc_number, value)
 
     if success:
         return jsonify({"status": "ok", "fader": fader_number, "value": value})

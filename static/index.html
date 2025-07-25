@@ -38,7 +38,12 @@
         <div class="main-content">
             <!-- Fader Area -->
             <div class="fader-area">
-                <div class="fader-contents">
+                <button class="options-button" id="options-button" title="Options">
+                    <svg viewBox="0 0 22 15" fill="none" stroke="#818181" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 1h20M1 7.5h20M1 14h20" />
+                    </svg>
+                </button>
+                <div class="fader-contents" id="fader-contents">
                     <div class="current-db-wrapper">
                         <div class="db-indicator">
                             <div class="db-value" id="db-value">0.0</div>
@@ -64,6 +69,20 @@
                         </div>
                         
                         <div class="spacer"></div>
+                    </div>
+                </div>
+                <div class="fx-controls" id="fx-controls">
+                    <div class="fx-fader">
+                        <label class="fx-label">Verb Dry/Wet</label>
+                        <input type="range" id="fx-verb" class="fx-slider" min="0" max="100" value="50" />
+                    </div>
+                    <div class="fx-fader">
+                        <label class="fx-label">Verb Decay</label>
+                        <input type="range" id="fx-decay" class="fx-slider" min="0" max="100" value="50" />
+                    </div>
+                    <div class="fx-fader">
+                        <label class="fx-label">Delay Dry/Wet</label>
+                        <input type="range" id="fx-delay" class="fx-slider" min="0" max="100" value="50" />
                     </div>
                 </div>
             </div>
@@ -123,7 +142,10 @@
             'Fader 2': 0,
             'Fader 3': 0,
             'Headphones': 0,
-            'Backing': 0
+            'Backing': 0,
+            'Verb Dry/Wet': 50,
+            'Verb Decay': 50,
+            'Delay Dry/Wet': 50
         };
 
         // Convert dB to MIDI value (0-127)
@@ -235,6 +257,10 @@
         async function sendMidiCommand(instrumentName, value) {
             // Determine endpoint based on selected control
             let endpoint = null;
+            const port = window.location.port;
+            const fxMapping = port === '5002'
+                ? { 'Verb Dry/Wet': 14, 'Verb Decay': 15, 'Delay Dry/Wet': 16 }
+                : { 'Verb Dry/Wet': 11, 'Verb Decay': 12, 'Delay Dry/Wet': 13 };
 
             if (instrumentName.startsWith('Fader')) {
                 const faderNumber = parseInt(instrumentName.split(' ')[1]);
@@ -243,6 +269,8 @@
                 endpoint = `/api/fader/4/${value}`;
             } else if (instrumentName === 'Headphones') {
                 endpoint = `/api/fader/5/${value}`;
+            } else if (instrumentName in fxMapping) {
+                endpoint = `/api/fader/${fxMapping[instrumentName]}/${value}`;
             } else {
                 return { status: 'ok', message: 'Control updated (no MIDI)' };
             }
@@ -325,6 +353,12 @@
             // Send MIDI command
             const midiValue = dbToMidi(newDb);
             sendMidiCommand(selectedInstrument, midiValue);
+        }
+
+        function handleFxChange(name, value) {
+            instrumentLevels[name] = value;
+            const midiValue = Math.round((value / 100) * 127);
+            sendMidiCommand(name, midiValue);
         }
 
         // Initialize fader drag functionality
@@ -611,11 +645,23 @@
         // Initialize the application when the page loads
         document.addEventListener('DOMContentLoaded', function() {
             console.log('LUNA MCU Virtual Controller initialized');
-            
+
             // Initialize all components
             initializeFader();
             initializeInstrumentButtons();
             initKeyboardShortcuts();
+
+            const optionsButton = document.getElementById('options-button');
+            const faderContents = document.getElementById('fader-contents');
+            const fxControls = document.getElementById('fx-controls');
+            optionsButton.addEventListener('click', () => {
+                const show = fxControls.classList.toggle('active');
+                optionsButton.classList.toggle('active', show);
+                faderContents.style.display = show ? 'none' : 'block';
+            });
+            document.getElementById('fx-verb').addEventListener('input', e => handleFxChange('Verb Dry/Wet', parseInt(e.target.value)));
+            document.getElementById('fx-decay').addEventListener('input', e => handleFxChange('Verb Decay', parseInt(e.target.value)));
+            document.getElementById('fx-delay').addEventListener('input', e => handleFxChange('Delay Dry/Wet', parseInt(e.target.value)));
             
             // Set initial fader position
             updateFaderPosition(0);
