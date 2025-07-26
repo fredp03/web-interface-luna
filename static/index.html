@@ -38,7 +38,12 @@
         <div class="main-content">
             <!-- Fader Area -->
             <div class="fader-area">
-                <div class="fader-contents">
+                <div class="options-button" id="options-button" title="Options">
+                    <svg viewBox="0 0 22 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6.41667 1H20.5M6.41667 7.5H20.5M6.41667 14H20.5M1 1H1.01083M1 7.5H1.01083M1 14H1.01083" />
+                    </svg>
+                </div>
+                <div class="fader-contents" id="fader-contents">
                     <div class="current-db-wrapper">
                         <div class="db-indicator">
                             <div class="db-value" id="db-value">0.0</div>
@@ -64,6 +69,59 @@
                         </div>
                         
                         <div class="spacer"></div>
+                    </div>
+                </div>
+
+                <div class="fx-controls" id="fx-controls">
+                    <div class="fx-faders">
+                        <div class="fx-control-fader">
+                            <div class="current-db-wrapper">
+                                <div class="db-indicator">
+                                    <div class="db-value" id="fx1-value">50.0</div>
+                                    <div class="db-unit">%</div>
+                                </div>
+                            </div>
+                            <div class="fx-fader-wrapper">
+                                <div class="fx-fader-container" id="fx1-container">
+                                    <div class="fader-track-top"></div>
+                                    <div class="fader-handle" id="fx1-handle" title="Double-click to reset to 50%"></div>
+                                    <div class="fader-track-bottom"></div>
+                                </div>
+                            </div>
+                            <div class="fx-label">Verb. Dry / Wet</div>
+                        </div>
+                        <div class="fx-control-fader">
+                            <div class="current-db-wrapper">
+                                <div class="db-indicator">
+                                    <div class="db-value" id="fx2-value">50.0</div>
+                                    <div class="db-unit">%</div>
+                                </div>
+                            </div>
+                            <div class="fx-fader-wrapper">
+                                <div class="fx-fader-container" id="fx2-container">
+                                    <div class="fader-track-top"></div>
+                                    <div class="fader-handle" id="fx2-handle" title="Double-click to reset to 50%"></div>
+                                    <div class="fader-track-bottom"></div>
+                                </div>
+                            </div>
+                            <div class="fx-label">Verb. Decay</div>
+                        </div>
+                        <div class="fx-control-fader">
+                            <div class="current-db-wrapper">
+                                <div class="db-indicator">
+                                    <div class="db-value" id="fx3-value">50.0</div>
+                                    <div class="db-unit">%</div>
+                                </div>
+                            </div>
+                            <div class="fx-fader-wrapper">
+                                <div class="fx-fader-container" id="fx3-container">
+                                    <div class="fader-track-top"></div>
+                                    <div class="fader-handle" id="fx3-handle" title="Double-click to reset to 50%"></div>
+                                    <div class="fader-track-bottom"></div>
+                                </div>
+                            </div>
+                            <div class="fx-label">Delay Dry / Wet</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -124,6 +182,13 @@
             'Fader 3': 0,
             'Headphones': 0,
             'Backing': 0
+        };
+
+        // FX fader levels (percentages)
+        const fxLevels = {
+            fx1: 50,
+            fx2: 50,
+            fx3: 50
         };
 
         // Convert dB to MIDI value (0-127)
@@ -229,6 +294,95 @@
 
             // Update dB display
             document.getElementById('db-value').textContent = db.toFixed(1);
+        }
+
+        // ----- FX Fader Helpers -----
+        function percentToPosition(percent) {
+            return Math.max(0, Math.min(1, (100 - percent) / 100));
+        }
+
+        function positionToPercent(pos) {
+            pos = Math.max(0, Math.min(1, pos));
+            return (1 - pos) * 100;
+        }
+
+        function updateFxFaderPosition(prefix, value, enableTransition = true) {
+            const container = document.getElementById(prefix + '-container');
+            const valueEl = document.getElementById(prefix + '-value');
+            if (!container) return;
+
+            const position = percentToPosition(value);
+            const totalHeight = 225;
+            const handleHeight = 20;
+            const trackHeight = totalHeight - handleHeight;
+
+            const topHeight = position * trackHeight;
+            const bottomHeight = trackHeight - topHeight;
+
+            const topTrack = container.querySelector('.fader-track-top');
+            const bottomTrack = container.querySelector('.fader-track-bottom');
+
+            if (topTrack && bottomTrack) {
+                if (enableTransition) {
+                    topTrack.classList.remove('no-transition');
+                    bottomTrack.classList.remove('no-transition');
+                } else {
+                    topTrack.classList.add('no-transition');
+                    bottomTrack.classList.add('no-transition');
+                }
+
+                topTrack.style.height = `${topHeight}px`;
+                bottomTrack.style.height = `${bottomHeight}px`;
+            }
+
+            if (valueEl) {
+                valueEl.textContent = value.toFixed(1);
+            }
+        }
+
+        function initializeFxFader(prefix, key) {
+            const container = document.getElementById(prefix + '-container');
+            const handle = document.getElementById(prefix + '-handle');
+            if (!container || !handle) return;
+
+            const totalHeight = 225;
+            const handleHeight = 20;
+            const trackHeight = totalHeight - handleHeight;
+
+            let dragging = false;
+            let dragOffsetFx = 0;
+
+            handle.addEventListener('pointerdown', (e) => {
+                const rect = handle.getBoundingClientRect();
+                dragOffsetFx = e.clientY - rect.top - rect.height / 2;
+                dragging = true;
+                handle.setPointerCapture(e.pointerId);
+                e.preventDefault();
+            });
+
+            handle.addEventListener('pointerup', () => {
+                dragging = false;
+            });
+
+            handle.addEventListener('pointercancel', () => {
+                dragging = false;
+            });
+
+            handle.addEventListener('dblclick', () => {
+                fxLevels[key] = 50;
+                updateFxFaderPosition(prefix, fxLevels[key], true);
+            });
+
+            document.addEventListener('pointermove', (e) => {
+                if (!dragging) return;
+                const rect = container.getBoundingClientRect();
+                const y = e.clientY - rect.top - dragOffsetFx;
+                const pos = Math.max(0, Math.min(1, y / trackHeight));
+                fxLevels[key] = positionToPercent(pos);
+                updateFxFaderPosition(prefix, fxLevels[key], false);
+            });
+
+            updateFxFaderPosition(prefix, fxLevels[key], true);
         }
 
         // Send MIDI command
@@ -548,6 +702,34 @@
             });
         }
 
+        // Initialize FX faders and options toggle
+        function initializeFxControls() {
+            initializeFxFader('fx1', 'fx1');
+            initializeFxFader('fx2', 'fx2');
+            initializeFxFader('fx3', 'fx3');
+        }
+
+        function initializeOptionsButton() {
+            const optionsBtn = document.getElementById('options-button');
+            const fxEl = document.getElementById('fx-controls');
+            const faderEl = document.getElementById('fader-contents');
+            if (!optionsBtn || !fxEl || !faderEl) return;
+            let showingFx = false;
+
+            optionsBtn.addEventListener('click', () => {
+                showingFx = !showingFx;
+                if (showingFx) {
+                    fxEl.classList.add('show');
+                    faderEl.style.display = 'none';
+                    optionsBtn.classList.add('active');
+                } else {
+                    fxEl.classList.remove('show');
+                    faderEl.style.display = 'block';
+                    optionsBtn.classList.remove('active');
+                }
+            });
+        }
+
         /**
          * Check MIDI connection status on page load
          */
@@ -611,10 +793,12 @@
         // Initialize the application when the page loads
         document.addEventListener('DOMContentLoaded', function() {
             console.log('LUNA MCU Virtual Controller initialized');
-            
+
             // Initialize all components
             initializeFader();
             initializeInstrumentButtons();
+            initializeFxControls();
+            initializeOptionsButton();
             initKeyboardShortcuts();
             
             // Set initial fader position
