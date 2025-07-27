@@ -142,7 +142,7 @@ body {
 /* Fader Area */
 .fader-area {
     background: #e8e8e8;
-    height: 469px;
+    min-height: 60vh;
     width: 100%;
     max-width: 400px; /* Constrain fader area width instead */
     margin: 0 auto; /* Center the fader area */
@@ -515,7 +515,7 @@ body {
 
 @media (max-width: 360px) {
     .fader-area {
-        height: 400px;
+        min-height: 60vh;
         width: 100%;
         max-width: 360px; /* Add max-width constraint */
         margin: 0 auto; /* Center the fader area */
