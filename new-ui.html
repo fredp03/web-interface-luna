@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Interface</title>
+    <style>
+      /* Global Styles */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Anonymous Pro", monospace;
+      }
+
+      body {
+        background-color: #e0d7ce;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 20px;
+        overflow-x: hidden;
+      }
+
+      /* Support for iOS Safari toolbar handling */
+      @supports (min-height: 100dvh) {
+        body {
+          min-height: 100dvh;
+        }
+      }
+
+    .container {
+      max-width: 500px;
+      width: 100%;
+      height: 100%;
+      padding: 27px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+      /* Header Styles */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #000000;
+        cursor: pointer;
+        user-select: none;
+        transition: color 0.2s ease;
+      }
+
+      .header h1:hover {
+        color: #333333;
+      }
+
+      .status {
+        display: flex;
+        align-items: center;
+      }
+
+      .status-indicator {
+        width: 13px;
+        height: 13px;
+        background-color: #90db86;
+        border-radius: 50%;
+        margin-right: 10px;
+      }
+
+      .status-text {
+        font-size: 11px;
+        color: #292d32;
+      }
+
+      /* Main Content Styles */
+      .fader-area {
+        height: 342px;
+        background-color: #d4cbc4;
+        border-radius: 29px;
+        box-shadow: inset 1px 1px 3px #908a85e6, inset -1px -1px 2px #ffffffe6, inset 1px -1px 2px #908a8533,
+          inset -1px 1px 2px #908a8533, -1px -1px 2px #908a8580, 1px 1px 2px #ffffff4c;
+        margin-bottom: 20px;
+      }
+
+      .available-tracks {
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        margin-bottom: 20px;
+        padding-top: 20px;
+        padding-bottom: 20px;
+      }
+
+      .track {
+        width: 100%;
+        height: 34px;
+        padding: 5px 29px;
+        border-radius: 6px;
+        border: 0.5px solid #dcc7b6;
+        box-shadow: inset 0px 0px 1.3px rgba(0, 0, 0, 0.25);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      .track.default {
+        background-color: #d4cbc4;
+        opacity: 0.8;
+      }
+
+      .track.selected {
+        background-color: #efe5dd;
+      }
+
+      .track-name {
+        color: #53453b;
+        font-size: 11px;
+        font-family: "Futura", sans-serif;
+        font-weight: 700;
+      }
+
+      .track-controls {
+        display: flex;
+        gap: 8px;
+      }
+
+      .mute-button, .solo-button {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .mute-button:hover, .solo-button:hover {
+        opacity: 0.7;
+      }
+
+      /* Button Styles */
+      .button-container {
+        display: flex;
+        justify-content: space-between;
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .button-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .button {
+        width: 42px;
+        height: 42px;
+        background-color: #d8cfc8;
+        border-radius: 9px;
+        border: 1px solid #dcc6b5;
+        box-shadow: 1px 1px 3px #b5aea8e6, -1px -1px 2px #fbf0e8e6, 1px -1px 2px #b5aea833, -1px 1px 2px #b5aea833;
+        margin-bottom: 16px;
+      }
+
+      .button-label {
+        font-family: "Alegreya Sans", sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        color: #53453b;
+      }
+
+      /* Fader Handle Cursor Styles */
+      .FaderHandle {
+        cursor: grab;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+      }
+      
+      .FaderHandle:active,
+      .FaderHandle.dragging {
+        cursor: grabbing;
+      }
+
+      /* Prevent text selection during fader dragging */
+      .Fader {
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+      }
+
+      /* Disable selection on entire body when dragging */
+      body.dragging {
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+      }
+
+      /* Prevent selection on fader components */
+      .FaderWrapper,
+      .FaderTopWrapper,
+      .FaderActiveWrapper,
+      .FaderTop,
+      .FaderActive,
+      .EffectFader {
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+      }
+
+      /* Monitor button styles */
+      .ButtonComponent {
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .ButtonComponent:hover .Button {
+        background: #E2D9D2 !important;
+        transform: translateY(-1px);
+      }
+
+      /* Selected state styles for monitor buttons */
+    .ButtonComponent.selected .Label {
+        font-weight: 800;
+      }
+
+      /* Container for the two active screens */
+      .fader-area-container {
+        position: relative;
+        height: 450px;
+        margin-bottom: 20px;
+        overflow: hidden;
+      }
+
+      .ActiveScreenLargeFader,
+      .ActiveScreenFxMenu {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        margin-bottom: 0 !important;
+        backface-visibility: hidden;
+        will-change: transform, opacity;
+        transform: translateZ(0);
+      }
+
+      .ActiveScreenFxMenu {
+        transform: translateY(100%);
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script>
+      // Scroll lock state
+      let isScrollLocked = false;
+      let isAutoScrolling = false;
+
+      // Auto-hide Safari toolbar on page load - DISABLED
+      /*
+      window.addEventListener('load', function() {
+        // Small delay to ensure page is fully loaded
+        setTimeout(function() {
+          if (!isScrollLocked) {
+            // Scroll down slightly to trigger Safari toolbar hiding
+            window.scrollTo(0, 50);
+            
+            // Then smoothly scroll back to top after toolbar is hidden
+            setTimeout(function() {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 300);
+          }
+        }, 100);
+      });
+
+      // Also trigger on orientation change (when rotating device)
+      window.addEventListener('orientationchange', function() {
+        setTimeout(function() {
+          if (!isScrollLocked) {
+            window.scrollTo(0, 50);
+            setTimeout(function() {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 300);
+          }
+        }, 500);
+      });
+
+      // Handle scrolling based on lock state
+      window.addEventListener('scroll', function(e) {
+        if (isScrollLocked) {
+          // Completely prevent any scrolling when locked
+          e.preventDefault();
+          window.scrollTo(0, 0);
+          return false;
+        } else {
+          // Default behavior: auto-scroll back to top if user scrolls too far
+          if (!isAutoScrolling && window.scrollY > 30) {
+            isAutoScrolling = true;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => { isAutoScrolling = false; }, 500);
+          }
+        }
+      });
+
+      // Prevent scrolling with touch/wheel events when locked
+      window.addEventListener('touchmove', function(e) {
+        if (isScrollLocked) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      window.addEventListener('wheel', function(e) {
+        if (isScrollLocked) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      // Toggle scroll lock when clicking "User" text
+      window.addEventListener('DOMContentLoaded', function() {
+        const userTitle = document.querySelector('.header h1');
+        
+        userTitle.addEventListener('click', function() {
+          isScrollLocked = !isScrollLocked;
+          
+          if (isScrollLocked) {
+            // Lock scrolling - no visual changes to text
+            // Force scroll to top
+            window.scrollTo(0, 0);
+          } else {
+            // Unlock scrolling - no visual changes to text
+            // Trigger auto-hide sequence
+            setTimeout(function() {
+              window.scrollTo(0, 50);
+              setTimeout(function() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }, 300);
+            }, 100);
+          }
+        });
+      });
+      */
+
+      // Track selection functionality
+      window.addEventListener('DOMContentLoaded', function() {
+        const tracks = document.querySelectorAll('.track');
+        
+        tracks.forEach(track => {
+          track.addEventListener('click', function() {
+            // Remove selected class from all tracks
+            tracks.forEach(t => {
+              t.classList.remove('selected');
+              t.classList.add('default');
+            });
+            
+            // Add selected class to clicked track
+            this.classList.remove('default');
+            this.classList.add('selected');
+            
+            // Update fader display when track selection changes
+            updateFaderDisplay();
+          });
+        });
+
+        // Screen toggle functionality with AnimeJS
+        const largeFaderScreen = document.querySelector('.ActiveScreenLargeFader');
+        const fxMenuScreen = document.querySelector('.ActiveScreenFxMenu');
+        const optionsIcons = document.querySelectorAll('.OptionsIcon');
+        let showingFxMenu = false;
+
+        // Ensure both screens are visible for animation
+        largeFaderScreen.style.display = 'flex';
+        fxMenuScreen.style.display = 'flex';
+        anime.set(largeFaderScreen, { translateY: '0%', opacity: 1 });
+        anime.set(fxMenuScreen, { translateY: '100%', opacity: 0 });
+
+        const toggleScreens = showFx => {
+          anime.timeline({ duration: 500, easing: 'easeInOutQuart' })
+            .add({
+              targets: largeFaderScreen,
+              translateY: showFx ? '-100%' : '0%',
+              opacity: showFx ? [1, 0] : [0, 1]
+            }, 0)
+            .add({
+              targets: fxMenuScreen,
+              translateY: showFx ? '0%' : '100%',
+              opacity: showFx ? [0, 1] : [1, 0]
+            }, 0);
+        };
+
+        optionsIcons.forEach(icon => {
+          icon.addEventListener('click', () => {
+            toggleScreens(!showingFxMenu);
+            showingFxMenu = !showingFxMenu;
+          });
+        });
+
+        // Fader functionality - adapted from working audio mixer
+        let isDragging = false;
+        let isDraggingEffect = null;
+        let hasDragged = false;
+        let initialMouseY = 0;
+        
+        // Track volume state
+        let trackVolumes = {
+          'Guitar 1': 0,
+          'Guitar 2': 0,
+          'Bass': 0
+        };
+        
+        // Monitor volume state
+        let monitorVolumes = {
+          'Headphones': 0,
+          'Backing': 0
+        };
+        
+        // Current active fader type and name
+        let activeFaderType = 'track'; // 'track' or 'monitor'
+        let activeFaderName = 'Guitar 1'; // tracks start with Guitar 1 selected
+        
+        let effectValues = {
+          reverbDryWet: 50,
+          reverbDecay: 50,
+          delayDryWet: 50
+        };
+
+        function calculateFaderPosition(value) {
+            // Convert dB value to position (0 = top, 1 = bottom)
+            // Range: +6 to -60 dB
+            if (value >= 6) return 0;
+            if (value >= 0) return (6 - value) / 6 * 0.25; // +6 to 0: 0% to 25%
+            if (value >= -20) return 0.25 + (0 - value) / 20 * 0.25; // 0 to -20: 25% to 50%
+            if (value >= -40) return 0.5 + (-20 - value) / 20 * 0.25; // -20 to -40: 50% to 75%
+            if (value >= -60) return 0.75 + (-40 - value) / 20 * 0.25; // -40 to -60: 75% to 100%
+            return 1; // Below -60
+        }
+
+        function calculateEffectPosition(value) {
+            // Convert 0-100% to position (0 = top, 1 = bottom)
+            return (100 - value) / 100;
+        }
+
+        function updateFaderValue(percentage) {
+            console.log('updateFaderValue called with percentage:', percentage);
+            // Convert percentage back to dB value
+            let dbValue;
+            if (percentage <= 0.25) {
+                dbValue = 6 - (percentage / 0.25) * 6;
+            } else if (percentage <= 0.5) {
+                dbValue = 0 - ((percentage - 0.25) / 0.25) * 20;
+            } else if (percentage <= 0.75) {
+                dbValue = -20 - ((percentage - 0.5) / 0.25) * 20;
+            } else {
+                dbValue = -40 - ((percentage - 0.75) / 0.25) * 20;
+            }
+            
+            console.log('Calculated dB value:', dbValue);
+            
+            // Update the appropriate volume based on active fader type
+            if (activeFaderType === 'track') {
+                const selectedTrack = document.querySelector('.track.selected .track-name');
+                if (selectedTrack) {
+                    const trackName = selectedTrack.textContent;
+                    trackVolumes[trackName] = Number(dbValue.toFixed(1));
+                    console.log('Updated trackVolumes for', trackName, ':', trackVolumes[trackName]);
+                }
+            } else if (activeFaderType === 'monitor') {
+                monitorVolumes[activeFaderName] = Number(dbValue.toFixed(1));
+                console.log('Updated monitorVolumes for', activeFaderName, ':', monitorVolumes[activeFaderName]);
+            }
+            
+            updateFaderDisplay();
+        }
+
+        function updateEffectValue(effectType, percentage) {
+            const effectValue = 100 - (percentage * 100);
+            effectValues[effectType] = Number(effectValue.toFixed(1));
+            updateEffectDisplay(effectType);
+        }
+
+        function updateFaderDisplay() {
+            let value, trackName;
+            
+            if (activeFaderType === 'track') {
+                const selectedTrack = document.querySelector('.track.selected .track-name');
+                if (!selectedTrack) return;
+                trackName = selectedTrack.textContent;
+                value = trackVolumes[trackName];
+            } else if (activeFaderType === 'monitor') {
+                trackName = activeFaderName;
+                value = monitorVolumes[activeFaderName];
+            } else {
+                return;
+            }
+            
+            const position = calculateFaderPosition(value);
+            
+            console.log('Large fader update - Type:', activeFaderType, 'Name:', trackName, 'Value:', value, 'Position:', position);
+            
+            // Update Large Fader - target the wrapper elements that control flex
+            const faderTopWrapper = document.querySelector('.ActiveScreenLargeFader .FaderTopWrapper');
+            const faderActiveWrapper = document.querySelector('.ActiveScreenLargeFader .FaderActiveWrapper');
+            // The db indicator element uses a numeric class "4" which cannot be
+            // directly queried with a standard CSS class selector. Query it
+            // using an attribute selector instead to avoid a syntax error.
+            const dbIndicator = document.querySelector('.ActiveScreenLargeFader .DbIndicator [class="4"]');
+            
+            console.log('Elements found:', !!faderTopWrapper, !!faderActiveWrapper, !!dbIndicator);
+            
+            if (faderTopWrapper && faderActiveWrapper) {
+                const topFlex = `${position} 1 0`;
+                const activeFlex = `${1 - position} 1 0`;
+                console.log('Setting flex - top:', topFlex, 'active:', activeFlex);
+                
+                faderTopWrapper.style.flex = topFlex;
+                faderActiveWrapper.style.flex = activeFlex;
+                
+                // Verify the values were set
+                console.log('After setting - top flex:', faderTopWrapper.style.flex, 'active flex:', faderActiveWrapper.style.flex);
+            }
+            
+            if (dbIndicator) {
+                dbIndicator.textContent = value;
+            }
+        }
+
+        function updateEffectDisplay(effectType) {
+            const value = effectValues[effectType];
+            const position = calculateEffectPosition(value);
+            
+            // Find the effect fader based on effect type
+            const effectMap = {
+                'reverbDryWet': 0,
+                'reverbDecay': 1, 
+                'delayDryWet': 2
+            };
+            
+            const effectIndex = effectMap[effectType];
+            if (effectIndex !== undefined) {
+                const effectFaders = document.querySelectorAll('.ActiveScreenFxMenu .EffectFader');
+                const effectFader = effectFaders[effectIndex];
+                
+                if (effectFader) {
+                    // Target the wrapper elements that control flex
+                    const faderTopWrapper = effectFader.querySelector('.FaderTopWrapper');
+                    const faderActiveWrapper = effectFader.querySelector('.FaderActiveWrapper');
+                    const valueDisplay = effectFader.querySelector('.Value');
+                    
+                    if (faderTopWrapper && faderActiveWrapper) {
+                        faderTopWrapper.style.flex = `${position} 1 0`;
+                        faderActiveWrapper.style.flex = `${1 - position} 1 0`;
+                    }
+                    
+                    if (valueDisplay) {
+                        valueDisplay.textContent = value;
+                    }
+                }
+            }
+        }
+
+        // Mouse event handlers
+        function handleFaderMouseDown(e) {
+            if (e.detail === 2) {
+                handleFaderDoubleClick(e);
+                return;
+            }
+            
+            isDragging = true;
+            hasDragged = false;
+            initialMouseY = e.clientY;
+            
+            // Add dragging class to body to prevent text selection
+            document.body.classList.add('dragging');
+            
+            // Add dragging class to fader handle
+            const faderHandle = e.currentTarget.querySelector('.FaderHandle');
+            if (faderHandle) {
+                faderHandle.classList.add('dragging');
+            }
+        }
+
+        function handleFaderTouchStart(e) {
+            e.preventDefault();
+            isDragging = true;
+            hasDragged = false;
+            initialMouseY = e.touches[0].clientY;
+            
+            // Add dragging class to body to prevent text selection
+            document.body.classList.add('dragging');
+            
+            // Add dragging class to fader handle
+            const faderHandle = e.currentTarget.querySelector('.FaderHandle');
+            if (faderHandle) {
+                faderHandle.classList.add('dragging');
+            }
+        }
+
+        function handleFaderMouseMove(e) {
+            if (!isDragging) return;
+            
+            const clientY = e.clientY;
+            const mouseMoveDistance = Math.abs(clientY - initialMouseY);
+            if (mouseMoveDistance > 3) {
+                hasDragged = true;
+            }
+            
+            const fader = document.querySelector('.ActiveScreenLargeFader .Fader[data-property-1="Fader"]');
+            if (!fader) return;
+
+            const rect = fader.getBoundingClientRect();
+            const y = clientY - rect.top;
+            const percentage = Math.max(0, Math.min(1, y / rect.height));
+            
+            updateFaderValue(percentage);
+        }
+
+        function handleFaderTouchMove(e) {
+            e.preventDefault();
+            if (!isDragging) return;
+            
+            const touch = e.touches[0];
+            const mouseMoveDistance = Math.abs(touch.clientY - initialMouseY);
+            if (mouseMoveDistance > 3) {
+                hasDragged = true;
+            }
+            
+            const fader = document.querySelector('.ActiveScreenLargeFader .Fader[data-property-1="Fader"]');
+            if (!fader) return;
+
+            const rect = fader.getBoundingClientRect();
+            const y = touch.clientY - rect.top;
+            const percentage = Math.max(0, Math.min(1, y / rect.height));
+            
+            updateFaderValue(percentage);
+        }
+
+        function handleFaderDoubleClick(e) {
+            if (!hasDragged) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const selectedTrack = document.querySelector('.track.selected .track-name');
+                if (selectedTrack) {
+                    const trackName = selectedTrack.textContent;
+                    trackVolumes[trackName] = 0;
+                    updateFaderDisplay();
+                }
+            }
+        }
+
+        // Effect fader handlers
+        function handleEffectMouseDown(effectType, e) {
+            isDraggingEffect = effectType;
+            
+            // Add dragging class to body to prevent text selection
+            document.body.classList.add('dragging');
+            
+            // Add dragging class to effect fader handle
+            const faderHandle = e.currentTarget.querySelector('.FaderHandle');
+            if (faderHandle) {
+                faderHandle.classList.add('dragging');
+            }
+            
+            handleEffectMouseMove(e);
+        }
+
+        function handleEffectTouchStart(effectType, e) {
+            e.preventDefault();
+            isDraggingEffect = effectType;
+            
+            // Add dragging class to body to prevent text selection
+            document.body.classList.add('dragging');
+            
+            // Add dragging class to effect fader handle
+            const faderHandle = e.currentTarget.querySelector('.FaderHandle');
+            if (faderHandle) {
+                faderHandle.classList.add('dragging');
+            }
+            
+            handleEffectTouchMove(e);
+        }
+
+        function handleEffectMouseMove(e) {
+            if (!isDraggingEffect) return;
+
+            const effectMap = {
+                'reverbDryWet': 0,
+                'reverbDecay': 1,
+                'delayDryWet': 2
+            };
+            
+            const effectIndex = effectMap[isDraggingEffect];
+            if (effectIndex === undefined) return;
+            
+            const effectFaders = document.querySelectorAll('.ActiveScreenFxMenu .EffectFader .Fader[data-property-1="Fader"]');
+            const effectElement = effectFaders[effectIndex];
+            
+            if (!effectElement) return;
+
+            const rect = effectElement.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            const percentage = Math.max(0, Math.min(1, y / rect.height));
+            
+            updateEffectValue(isDraggingEffect, percentage);
+        }
+
+        function handleEffectTouchMove(e) {
+            e.preventDefault();
+            if (!isDraggingEffect) return;
+
+            const effectMap = {
+                'reverbDryWet': 0,
+                'reverbDecay': 1,
+                'delayDryWet': 2
+            };
+            
+            const effectIndex = effectMap[isDraggingEffect];
+            if (effectIndex === undefined) return;
+            
+            const effectFaders = document.querySelectorAll('.ActiveScreenFxMenu .EffectFader .Fader[data-property-1="Fader"]');
+            const effectElement = effectFaders[effectIndex];
+            
+            if (!effectElement) return;
+
+            const touch = e.touches[0];
+            const rect = effectElement.getBoundingClientRect();
+            const y = touch.clientY - rect.top;
+            const percentage = Math.max(0, Math.min(1, y / rect.height));
+            
+            updateEffectValue(isDraggingEffect, percentage);
+        }
+
+        function handleMouseUp() {
+            isDragging = false;
+            isDraggingEffect = null;
+            hasDragged = false;
+            
+            // Remove dragging class from body to re-enable text selection
+            document.body.classList.remove('dragging');
+            
+            // Remove dragging class from all fader handles
+            const allFaderHandles = document.querySelectorAll('.FaderHandle');
+            allFaderHandles.forEach(handle => {
+                handle.classList.remove('dragging');
+            });
+        }
+
+        // Initialize faders after DOM is ready
+        function initializeFaders() {
+            // Large fader
+            const mainFader = document.querySelector('.ActiveScreenLargeFader .Fader[data-property-1="Fader"]');
+            if (mainFader) {
+                mainFader.addEventListener('mousedown', handleFaderMouseDown);
+                mainFader.addEventListener('touchstart', handleFaderTouchStart, { passive: false });
+            }
+
+            // Effect faders
+            const effectFaders = document.querySelectorAll('.ActiveScreenFxMenu .EffectFader .Fader[data-property-1="Fader"]');
+            const effectTypes = ['reverbDryWet', 'reverbDecay', 'delayDryWet'];
+            
+            effectFaders.forEach((fader, index) => {
+                const effectType = effectTypes[index];
+                if (effectType) {
+                    fader.addEventListener('mousedown', (e) => handleEffectMouseDown(effectType, e));
+                    fader.addEventListener('touchstart', (e) => handleEffectTouchStart(effectType, e), { passive: false });
+                }
+            });
+
+            // Global event listeners
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    handleFaderMouseMove(e);
+                }
+                if (isDraggingEffect) {
+                    handleEffectMouseMove(e);
+                }
+            });
+
+            document.addEventListener('touchmove', (e) => {
+                if (isDragging) {
+                    handleFaderTouchMove(e);
+                }
+                if (isDraggingEffect) {
+                    handleEffectTouchMove(e);
+                }
+            }, { passive: false });
+
+            document.addEventListener('mouseup', handleMouseUp);
+            document.addEventListener('touchend', handleMouseUp, { passive: false });
+            document.addEventListener('mouseleave', handleMouseUp);
+
+            // Initialize display
+            updateFaderDisplay();
+        }
+
+        // Initialize when track selection changes
+        const originalTrackHandler = document.querySelector('.track');
+        if (originalTrackHandler) {
+            // Override track selection to update fader
+            tracks.forEach(track => {
+                track.addEventListener('click', function() {
+                    // Remove selected class from all tracks
+                    tracks.forEach(t => {
+                        t.classList.remove('selected');
+                        t.classList.add('default');
+                    });
+                    
+                    // Remove selected class from monitor buttons
+                    const monitorButtons = document.querySelectorAll('.ButtonComponent');
+                    monitorButtons.forEach(btn => {
+                        btn.classList.remove('selected');
+                        updateButtonAppearance(btn, false);
+                    });
+                    
+                    // Add selected class to clicked track
+                    this.classList.remove('default');
+                    this.classList.add('selected');
+                    
+                    // Set active fader to track mode
+                    activeFaderType = 'track';
+                    const trackName = this.querySelector('.track-name').textContent;
+                    activeFaderName = trackName;
+                    
+                    // Update fader display for new selection
+                    setTimeout(updateFaderDisplay, 10);
+                });
+            });
+        }
+        
+        // Function to update button appearance based on selected state
+        function updateButtonAppearance(buttonElement, isSelected) {
+            const buttonSvg = buttonElement.querySelector('.Button');
+            
+            if (buttonElement.classList.contains('headphones-button')) {
+                if (isSelected) {
+                    // Selected headphones button
+                    buttonSvg.innerHTML = `
+                        <svg width="50" height="51" viewBox="0 0 50 51" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g filter="url(#filter0_dddd_57_152)">
+                        <rect x="3.83331" y="3" width="42" height="42" rx="9" fill="#BFAEA2"/>
+                        <rect x="4.33331" y="3.5" width="41" height="41" rx="8.5" stroke="#47423F"/>
+                        <path d="M18.3333 27V23C18.3333 21.4087 18.9654 19.8826 20.0907 18.7574C21.2159 17.6321 22.742 17 24.3333 17C25.9246 17 27.4508 17.6321 28.576 18.7574C29.7012 19.8826 30.3333 21.4087 30.3333 23V27M30.3333 27.6667C30.3333 28.0203 30.1929 28.3594 29.9428 28.6095C29.6928 28.8595 29.3536 29 29 29H28.3333C27.9797 29 27.6406 28.8595 27.3905 28.6095C27.1405 28.3594 27 28.0203 27 27.6667V25.6667C27 25.313 27.1405 24.9739 27.3905 24.7239C27.6406 24.4738 27.9797 24.3333 28.3333 24.3333H30.3333V27.6667ZM18.3333 27.6667C18.3333 28.0203 18.4738 28.3594 18.7239 28.6095C18.9739 28.8595 19.313 29 19.6667 29H20.3333C20.6869 29 21.0261 28.8595 21.2761 28.6095C21.5262 28.3594 21.6667 28.0203 21.6667 27.6667V25.6667C21.6667 25.313 21.5262 24.9739 21.2761 24.7239C21.0261 24.4738 20.6869 24.3333 20.3333 24.3333H18.3333V27.6667Z" stroke="#53453B" stroke-linecap="round" stroke-linejoin="round"/>
+                        </g>
+                        <defs>
+                        <filter id="filter0_dddd_57_152" x="0.833313" y="0" width="49" height="51" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                        <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="1" dy="3"/>
+                        <feGaussianBlur stdDeviation="1.5"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 1 0"/>
+                        <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_57_152"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="-1" dy="-1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.984314 0 0 0 0 0.941176 0 0 0 0 0.909804 0 0 0 0.9 0"/>
+                        <feBlend mode="normal" in2="effect1_dropShadow_57_152" result="effect2_dropShadow_57_152"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="1" dy="-1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 0.2 0"/>
+                        <feBlend mode="normal" in2="effect2_dropShadow_57_152" result="effect3_dropShadow_57_152"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="-1" dy="1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 0.2 0"/>
+                        <feBlend mode="normal" in2="effect3_dropShadow_57_152" result="effect4_dropShadow_57_152"/>
+                        <feBlend mode="normal" in="SourceGraphic" in2="effect4_dropShadow_57_152" result="shape"/>
+                        </filter>
+                        </defs>
+                        </svg>
+                    `;
+                } else {
+                    // Not selected headphones button
+                    buttonSvg.innerHTML = `
+                        <svg width="50" height="49" viewBox="0 0 50 49" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g filter="url(#filter0_dddd_57_142)">
+                        <rect x="3.83331" y="3" width="42" height="42" rx="9" fill="#D8CFC8"/>
+                        <rect x="4.33331" y="3.5" width="41" height="41" rx="8.5" stroke="#DCC7B6"/>
+                        <path d="M18.3333 27V23C18.3333 21.4087 18.9654 19.8826 20.0907 18.7574C21.2159 17.6321 22.742 17 24.3333 17C25.9246 17 27.4508 17.6321 28.576 18.7574C29.7012 19.8826 30.3333 21.4087 30.3333 23V27M30.3333 27.6667C30.3333 28.0203 30.1929 28.3594 29.9428 28.6095C29.6928 28.8595 29.3536 29 29 29H28.3333C27.9797 29 27.6406 28.8595 27.3905 28.6095C27.1405 28.3594 27 28.0203 27 27.6667V25.6667C27 25.313 27.1405 24.9739 27.3905 24.7239C27.6406 24.4738 27.9797 24.3333 28.3333 24.3333H30.3333V27.6667ZM18.3333 27.6667C18.3333 28.0203 18.4738 28.3594 18.7239 28.6095C18.9739 28.8595 19.313 29 19.6667 29H20.3333C20.6869 29 21.0261 28.8595 21.2761 28.6095C21.5262 28.3594 21.6667 28.0203 21.6667 27.6667V25.6667C21.6667 25.313 21.5262 24.9739 21.2761 24.7239C21.0261 24.4738 20.6869 24.3333 20.3333 24.3333H18.3333V27.6667Z" stroke="#53453B" stroke-linecap="round" stroke-linejoin="round"/>
+                        </g>
+                        <defs>
+                        <filter id="filter0_dddd_57_142" x="0.833313" y="0" width="49" height="49" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                        <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="1" dy="1"/>
+                        <feGaussianBlur stdDeviation="1.5"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 0.9 0"/>
+                        <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_57_142"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="-1" dy="-1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.984314 0 0 0 0 0.941176 0 0 0 0 0.909804 0 0 0 0.9 0"/>
+                        <feBlend mode="normal" in2="effect1_dropShadow_57_142" result="effect2_dropShadow_57_142"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="1" dy="-1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 0.2 0"/>
+                        <feBlend mode="normal" in2="effect2_dropShadow_57_142" result="effect3_dropShadow_57_142"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="-1" dy="1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 0.2 0"/>
+                        <feBlend mode="normal" in2="effect3_dropShadow_57_142" result="effect4_dropShadow_57_142"/>
+                        <feBlend mode="normal" in="SourceGraphic" in2="effect4_dropShadow_57_142" result="shape"/>
+                        </filter>
+                        </defs>
+                        </svg>
+                    `;
+                }
+            } else if (buttonElement.classList.contains('backing-button')) {
+                if (isSelected) {
+                    // Selected backing button
+                    buttonSvg.innerHTML = `
+                        <svg width="50" height="51" viewBox="0 0 50 51" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g filter="url(#filter0_dddd_57_152_2)">
+                        <rect x="3.83331" y="3" width="42" height="42" rx="9" fill="#BFAEA2"/>
+                        <rect x="4.33331" y="3.5" width="41" height="41" rx="8.5" stroke="#47423F"/>
+                        <path d="M22.5 28.5V19.8333L30.5 18.5V27.1667M22.5 28.5C22.5 29.6046 21.6046 30.5 20.5 30.5C19.3954 30.5 18.5 29.6046 18.5 28.5C18.5 27.3954 19.3954 26.5 20.5 26.5C21.6046 26.5 22.5 27.3954 22.5 28.5ZM30.5 27.1667C30.5 28.2712 29.6046 29.1667 28.5 29.1667C27.3954 29.1667 26.5 28.2712 26.5 27.1667C26.5 26.0621 27.3954 25.1667 28.5 25.1667C29.6046 25.1667 30.5 26.0621 30.5 27.1667Z" stroke="#1E1E1E" stroke-linecap="round" stroke-linejoin="round"/>
+                        </g>
+                        <defs>
+                        <filter id="filter0_dddd_57_152_2" x="0.833313" y="0" width="49" height="51" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                        <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="1" dy="3"/>
+                        <feGaussianBlur stdDeviation="1.5"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 1 0"/>
+                        <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_57_152_2"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="-1" dy="-1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.984314 0 0 0 0 0.941176 0 0 0 0 0.909804 0 0 0 0.9 0"/>
+                        <feBlend mode="normal" in2="effect1_dropShadow_57_152_2" result="effect2_dropShadow_57_152_2"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="1" dy="-1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 0.2 0"/>
+                        <feBlend mode="normal" in2="effect2_dropShadow_57_152_2" result="effect3_dropShadow_57_152_2"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="-1" dy="1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 0.2 0"/>
+                        <feBlend mode="normal" in2="effect3_dropShadow_57_152_2" result="effect4_dropShadow_57_152_2"/>
+                        <feBlend mode="normal" in="SourceGraphic" in2="effect4_dropShadow_57_152_2" result="shape"/>
+                        </filter>
+                        </defs>
+                        </svg>
+                    `;
+                } else {
+                    // Not selected backing button
+                    buttonSvg.innerHTML = `
+                        <svg width="50" height="49" viewBox="0 0 50 49" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g filter="url(#filter0_dddd_57_142_2)">
+                        <rect x="3.83331" y="3" width="42" height="42" rx="9" fill="#D8CFC8"/>
+                        <rect x="4.33331" y="3.5" width="41" height="41" rx="8.5" stroke="#DCC7B6"/>
+                        <path d="M22.5 28.5V19.8333L30.5 18.5V27.1667M22.5 28.5C22.5 29.6046 21.6046 30.5 20.5 30.5C19.3954 30.5 18.5 29.6046 18.5 28.5C18.5 27.3954 19.3954 26.5 20.5 26.5C21.6046 26.5 22.5 27.3954 22.5 28.5ZM30.5 27.1667C30.5 28.2712 29.6046 29.1667 28.5 29.1667C27.3954 29.1667 26.5 28.2712 26.5 27.1667C26.5 26.0621 27.3954 25.1667 28.5 25.1667C29.6046 25.1667 30.5 26.0621 30.5 27.1667Z" stroke="#1E1E1E" stroke-linecap="round" stroke-linejoin="round"/>
+                        </g>
+                        <defs>
+                        <filter id="filter0_dddd_57_142_2" x="0.833313" y="0" width="49" height="49" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                        <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="1" dy="1"/>
+                        <feGaussianBlur stdDeviation="1.5"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 0.9 0"/>
+                        <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_57_142_2"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="-1" dy="-1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.984314 0 0 0 0 0.941176 0 0 0 0 0.909804 0 0 0 0.9 0"/>
+                        <feBlend mode="normal" in2="effect1_dropShadow_57_142_2" result="effect2_dropShadow_57_142_2"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="1" dy="-1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 0.2 0"/>
+                        <feBlend mode="normal" in2="effect2_dropShadow_57_142_2" result="effect3_dropShadow_57_142_2"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="-1" dy="1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 0.2 0"/>
+                        <feBlend mode="normal" in2="effect3_dropShadow_57_142_2" result="effect4_dropShadow_57_142_2"/>
+                        <feBlend mode="normal" in="SourceGraphic" in2="effect4_dropShadow_57_142_2" result="shape"/>
+                        </filter>
+                        </defs>
+                        </svg>
+                    `;
+                }
+            } else {
+                // Default/Effects button (third button)
+                if (isSelected) {
+                    // Selected effects button
+                    buttonSvg.innerHTML = `
+                        <svg width="50" height="51" viewBox="0 0 50 51" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g filter="url(#filter0_dddd_57_152_3)">
+                        <rect x="3.83331" y="3" width="42" height="42" rx="9" fill="#BFAEA2"/>
+                        <rect x="4.33331" y="3.5" width="41" height="41" rx="8.5" stroke="#47423F"/>
+                        <g transform="translate(11, 15)">
+                        <path d="M24.3107 16.8788L24.2595 16.9298C24.2098 16.9792 24.2035 16.9808 24.0264 16.9931C23.9254 17.0008 23.6241 17.0024 23.3554 16.9962C23.0852 16.9915 22.8461 16.9823 22.8226 16.9761C22.7993 16.97 22.7744 16.9545 22.7698 16.9421C22.7636 16.9298 22.7558 16.8154 22.7527 16.6903L22.7449 16.4632H24.3185L24.3107 16.8788Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M4.94504 16.6686C4.94194 16.8339 4.93576 16.8818 4.91403 16.9158C4.8985 16.939 4.8705 16.9668 4.85186 16.9777C4.82544 16.9916 4.66233 16.9962 4.18706 16.9962C3.74442 16.9962 3.54245 16.9916 3.50357 16.9777C3.47406 16.9684 3.43517 16.9405 3.41809 16.9158C3.3917 16.8788 3.38704 16.8416 3.38238 16.6686L3.37615 16.4632H4.9482L4.94504 16.6686Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M2.22984 14.6633L2.22822 15.9533H1.98439C1.84924 15.9518 1.6628 15.9472 1.56804 15.9395C1.4143 15.9302 1.38633 15.9225 1.27296 15.8684C1.19529 15.8298 1.11758 15.7757 1.06321 15.7216C1.0104 15.6706 0.956069 15.5964 0.926558 15.5362C0.900156 15.4821 0.870617 15.4018 0.862848 15.3586C0.855081 15.3169 0.844208 15.1809 0.837995 15.0573C0.831783 14.9353 0.831783 14.7592 0.837995 14.668L0.848844 14.5011H2.06518L2.22984 14.6633Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M26.8333 14.9059C26.8333 15.1701 26.8271 15.3215 26.8147 15.374C26.8038 15.4158 26.7697 15.4914 26.7402 15.5409C26.7106 15.5903 26.6438 15.6738 26.5926 15.7263C26.5351 15.785 26.4621 15.8406 26.3984 15.8715C26.3161 15.9132 26.2741 15.924 26.1654 15.9302C26.0924 15.9332 25.8997 15.941 25.4353 15.9533L25.4369 15.4003C25.4369 15.0975 25.4431 14.7932 25.4509 14.7252C25.4618 14.6139 25.4695 14.5969 25.5114 14.5583L25.5611 14.5166H26.8333V14.9059Z" stroke="black" stroke-width="0.5"/>
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M24.9848 3.65885C24.9848 4.00946 24.9926 4.34927 25.0019 4.41271C25.0112 4.48532 25.033 4.55643 25.0594 4.60587C25.0827 4.64758 25.1402 4.72021 25.1868 4.76811C25.2334 4.81444 25.3048 4.87157 25.3468 4.89629C25.3903 4.92101 25.4618 4.94418 25.5239 4.95345C25.583 4.96118 25.8999 4.96891 26.8333 4.96891V14.0531H26.2073C25.8641 14.0531 25.538 14.0608 25.482 14.0686C25.426 14.0763 25.3437 14.1026 25.2971 14.1257C25.2505 14.1505 25.1806 14.1998 25.1402 14.2385C25.1013 14.2771 25.0516 14.342 24.9926 14.4625L24.9848 15.9379H2.67873V14.478L2.62279 14.393C2.59173 14.3466 2.53429 14.274 2.49391 14.2339C2.45508 14.1922 2.3898 14.1411 2.34941 14.1211C2.30281 14.0979 2.22516 14.0778 2.14751 14.0686C2.07605 14.0608 1.75448 14.0531 0.845766 14.0531V4.96891H1.4407C1.76689 4.96737 2.07911 4.96271 2.13504 4.95498C2.21116 4.94571 2.26091 4.92878 2.33702 4.88244C2.39139 4.84999 2.47059 4.78663 2.51253 4.74492C2.55447 4.70166 2.60727 4.62904 2.67096 4.49774L2.68027 3.0223H24.9848V3.65885ZM6.97375 11.3572C6.87589 11.3526 6.77647 11.3588 6.70191 11.3727C6.63822 11.3835 6.5295 11.4113 6.46115 11.4329C6.39281 11.4545 6.29497 11.4993 6.2437 11.5318C6.19245 11.5658 6.11012 11.6322 6.06196 11.6801C6.01226 11.728 5.94851 11.8037 5.919 11.8485C5.88949 11.8918 5.84909 11.9737 5.8289 12.0293C5.79474 12.125 5.7932 12.1498 5.7932 12.5406V12.95C5.89416 13.1524 5.95787 13.2482 5.99825 13.2946C6.03865 13.3394 6.12252 13.4073 6.18153 13.4444C6.24211 13.4799 6.32603 13.5232 6.36797 13.5401C6.41147 13.5571 6.51553 13.5819 6.60096 13.5973C6.719 13.6189 6.80599 13.6236 6.96598 13.6174C7.14771 13.6097 7.19743 13.602 7.331 13.5587C7.41643 13.5325 7.52826 13.4877 7.57953 13.4614C7.63701 13.4305 7.7225 13.3625 7.80482 13.2806C7.87783 13.208 7.96325 13.1045 7.99588 13.0489C8.0285 12.9933 8.06578 12.9098 8.07821 12.8635C8.0984 12.7955 8.10147 12.7152 8.09837 12.4541L8.09213 12.1297C8.01137 11.9628 7.94923 11.8624 7.90108 11.7991C7.85137 11.7357 7.76438 11.6461 7.7038 11.5997C7.64477 11.5534 7.55626 11.4978 7.50967 11.4761C7.46307 11.4561 7.35745 11.4221 7.27668 11.402C7.19125 11.3804 7.06384 11.3619 6.97375 11.3572ZM19.8666 11.6152C19.8246 11.6152 19.7221 11.6214 19.6413 11.6276C19.5233 11.6369 19.4751 11.6492 19.4005 11.6863C19.3493 11.711 19.2654 11.7635 19.2142 11.8021C19.1629 11.8392 19.0868 11.9134 19.0433 11.9644C19.0013 12.0154 18.9376 12.1127 18.905 12.1791C18.86 12.2672 18.8398 12.3321 18.8289 12.4232C18.8165 12.5097 18.8165 12.5808 18.8289 12.6627C18.8382 12.726 18.8646 12.8311 18.8864 12.8944C18.9081 12.9577 18.9501 13.0489 18.978 13.0952C19.0044 13.1416 19.0837 13.2358 19.152 13.3054C19.2405 13.3934 19.3058 13.4444 19.3772 13.4784C19.4394 13.5093 19.5342 13.5371 19.6258 13.5525C19.719 13.568 19.8076 13.5742 19.8666 13.568C19.9178 13.5618 19.9955 13.5479 20.0374 13.5371C20.0809 13.5263 20.1493 13.5016 20.1912 13.4799C20.2347 13.4598 20.3264 13.3873 20.3947 13.3193C20.4646 13.2513 20.5516 13.1508 20.5889 13.0952C20.6261 13.0396 20.6759 12.9531 20.7007 12.9021C20.7334 12.8342 20.7489 12.7708 20.7582 12.6704C20.7644 12.5932 20.7644 12.4696 20.7582 12.3923C20.7473 12.2749 20.7349 12.2332 20.679 12.122C20.6293 12.0215 20.5858 11.9628 20.4957 11.8748C20.4227 11.8006 20.3388 11.7373 20.2705 11.7017C20.1975 11.6631 20.1259 11.6399 20.0529 11.6291C19.9939 11.6199 19.9101 11.6136 19.8666 11.6152ZM14.7793 11.6214C14.7079 11.6168 14.6317 11.6214 14.5851 11.6322C14.5432 11.643 14.4625 11.674 14.4066 11.7002C14.3506 11.7249 14.2636 11.7775 14.2123 11.8161C14.1611 11.8547 14.085 11.9242 14.0446 11.969C14.0027 12.0153 13.9483 12.0942 13.9234 12.1451C13.8986 12.1961 13.8675 12.2919 13.8551 12.3583C13.8427 12.4232 13.8318 12.5174 13.8318 12.5669C13.8333 12.6148 13.8427 12.7075 13.8536 12.7708C13.8644 12.8342 13.8877 12.9175 13.9048 12.9562C13.9203 12.9948 13.9576 13.0612 13.9871 13.103C14.0166 13.1462 14.0819 13.225 14.1332 13.2791C14.186 13.3332 14.2667 13.4027 14.3133 13.4352C14.3599 13.4676 14.4298 13.5078 14.4686 13.5248C14.5075 13.5402 14.5634 13.5587 14.5929 13.5649C14.6224 13.5695 14.7141 13.568 14.7949 13.5587C14.8757 13.5495 14.9875 13.5309 15.0434 13.5186C15.0993 13.5047 15.1894 13.4722 15.2453 13.4444C15.3152 13.412 15.3852 13.3579 15.4722 13.2729C15.5638 13.1833 15.6104 13.1215 15.6446 13.0489C15.671 12.9933 15.7036 12.9037 15.7191 12.848C15.7393 12.7816 15.7486 12.6951 15.7486 12.5931C15.7486 12.4804 15.7393 12.4062 15.7129 12.315C15.6943 12.2471 15.6523 12.1466 15.6181 12.091C15.5855 12.0354 15.5109 11.9442 15.4519 11.8871C15.3774 11.8145 15.3121 11.7697 15.2298 11.7311C15.1661 11.7017 15.0636 11.6662 15.0046 11.6538C14.9455 11.6399 14.843 11.626 14.7793 11.6214ZM12.3328 11.6322C12.2303 11.6306 12.1185 11.6353 12.0843 11.6446C12.0501 11.6523 11.9631 11.6878 11.8901 11.7233C11.7891 11.7728 11.7301 11.816 11.64 11.9041C11.5468 11.9968 11.508 12.0494 11.4583 12.1529C11.4241 12.2255 11.3884 12.3213 11.379 12.3661C11.3697 12.4094 11.362 12.5113 11.362 12.5901C11.362 12.6781 11.3729 12.7754 11.3915 12.848C11.407 12.9114 11.4365 12.9948 11.4551 13.0335C11.4738 13.0721 11.5235 13.1477 11.5639 13.2034C11.6059 13.2605 11.6773 13.3316 11.7286 13.3671C11.7798 13.4027 11.8497 13.4459 11.887 13.4645C11.9227 13.4815 12.0066 13.5124 12.0734 13.5294C12.1542 13.5525 12.2396 13.5633 12.3406 13.5633C12.44 13.5649 12.5192 13.5556 12.5814 13.5371C12.6326 13.5216 12.7165 13.4846 12.7677 13.4537C12.819 13.4228 12.8998 13.3579 12.9464 13.3116C12.993 13.2652 13.0582 13.1849 13.0893 13.1339C13.1203 13.0829 13.1669 12.9964 13.1902 12.9408C13.2322 12.8435 13.2338 12.8342 13.2338 12.5546C13.2338 12.2765 13.2322 12.2671 13.1918 12.1837C13.1685 12.1358 13.1033 12.0509 13.0443 11.9906C12.9852 11.9319 12.8843 11.847 12.8206 11.8021C12.7569 11.7589 12.6637 11.7033 12.6124 11.6801C12.5286 11.6399 12.5006 11.6353 12.3328 11.6322ZM9.8133 11.6044C9.73718 11.6013 9.65016 11.6044 9.61909 11.6121C9.58646 11.6214 9.51655 11.6492 9.46374 11.6755C9.40938 11.7033 9.32705 11.7511 9.28046 11.782C9.23386 11.8145 9.16553 11.8701 9.1298 11.9041C9.09252 11.9396 9.03349 12.0107 8.99777 12.0648C8.96204 12.1173 8.9123 12.2054 8.88589 12.261C8.84085 12.3568 8.8378 12.3723 8.8378 12.5546C8.8378 12.7059 8.84396 12.7677 8.86881 12.8403C8.88589 12.8913 8.93404 12.9933 8.97753 13.0674C9.01947 13.1416 9.08323 13.2358 9.11895 13.276C9.15312 13.3177 9.22297 13.378 9.27423 13.4104C9.32393 13.4444 9.40475 13.4846 9.45135 13.5C9.49795 13.5155 9.57565 13.5325 9.62224 13.5371C9.66886 13.5433 9.77136 13.5386 9.84746 13.5278C9.92513 13.517 10.051 13.4892 10.1271 13.4645C10.2063 13.4382 10.3041 13.3934 10.3523 13.361C10.3989 13.3286 10.4719 13.2605 10.5123 13.2096C10.5542 13.1601 10.6132 13.0736 10.6443 13.018C10.6754 12.9624 10.7142 12.8758 10.7298 12.8249C10.7515 12.7569 10.7608 12.6858 10.7608 12.5546C10.7623 12.4325 10.7546 12.3506 10.7375 12.2919C10.7236 12.2456 10.6769 12.1544 10.6334 12.091C10.5915 12.0277 10.5092 11.9288 10.4502 11.8716C10.3927 11.8145 10.3026 11.7434 10.2513 11.7141C10.2001 11.6832 10.1115 11.6477 10.0541 11.6353C9.99503 11.623 9.88786 11.609 9.8133 11.6044ZM17.3734 11.6229C17.3175 11.6183 17.2274 11.6214 17.1715 11.6291C17.1109 11.6384 17.0177 11.6693 16.9385 11.7063C16.8655 11.7403 16.7645 11.7991 16.7133 11.8346C16.662 11.8717 16.5952 11.9319 16.5641 11.969C16.5331 12.0061 16.4864 12.0787 16.46 12.1297C16.4352 12.1807 16.3995 12.2718 16.3809 12.3305C16.3581 12.4026 16.3467 12.4798 16.3467 12.5622C16.3467 12.6302 16.3576 12.7353 16.3716 12.794C16.3855 12.8527 16.4166 12.9438 16.4414 12.9948C16.4663 13.0458 16.5207 13.1324 16.5626 13.188C16.6045 13.2436 16.6806 13.3208 16.7303 13.361C16.78 13.4012 16.8531 13.4521 16.8919 13.4722C16.9308 13.4938 17.0115 13.5186 17.0705 13.5278C17.1342 13.5386 17.2305 13.5417 17.3035 13.5356C17.3718 13.5294 17.4915 13.5093 17.5676 13.4892C17.6452 13.4706 17.7354 13.4413 17.7695 13.4243C17.8037 13.4073 17.8674 13.3625 17.9094 13.327C17.9528 13.2915 18.0212 13.2219 18.0616 13.174C18.1019 13.1262 18.1563 13.0458 18.1812 12.9948C18.2061 12.9438 18.2371 12.8434 18.2526 12.7708C18.2697 12.6812 18.2759 12.6055 18.2697 12.5314C18.2635 12.4727 18.2464 12.3784 18.2293 12.3228C18.2122 12.2672 18.1719 12.1838 18.1408 12.1374C18.1097 12.0911 18.0258 11.9968 17.9559 11.9288C17.886 11.8608 17.7897 11.782 17.7447 11.7558C17.6981 11.728 17.6188 11.6878 17.5676 11.6678C17.5163 11.6477 17.4294 11.626 17.3734 11.6229ZM23.6148 11.3201C23.5697 11.3201 23.4905 11.3325 23.4393 11.348C23.388 11.3634 23.3181 11.3865 23.2839 11.402C23.2497 11.4174 23.1768 11.4592 23.1209 11.4963C23.0649 11.5333 22.9779 11.6075 22.9251 11.6616C22.8739 11.7141 22.8055 11.8037 22.7729 11.8593C22.7403 11.9149 22.6983 11.9983 22.6781 12.0447C22.6579 12.091 22.63 12.1714 22.616 12.2224C22.6005 12.2733 22.588 12.3675 22.588 12.4309C22.588 12.4942 22.6005 12.5916 22.616 12.6472C22.63 12.7028 22.6611 12.7893 22.6844 12.8403C22.7077 12.8913 22.7543 12.9748 22.79 13.0257C22.8242 13.0767 22.88 13.1432 22.9126 13.1725C22.9468 13.2034 23.023 13.2574 23.082 13.293C23.141 13.3285 23.2326 13.3718 23.2839 13.3903C23.3491 13.4135 23.4284 13.4258 23.548 13.4305C23.6645 13.4367 23.7624 13.4305 23.8587 13.415C23.9565 13.3965 24.0373 13.3702 24.1305 13.3254C24.233 13.2744 24.2905 13.2312 24.3884 13.1354C24.4722 13.0504 24.5313 12.9747 24.5701 12.9021C24.6012 12.8434 24.6416 12.7522 24.6587 12.7013C24.682 12.6379 24.6959 12.5545 24.7006 12.4386C24.7084 12.2904 24.7053 12.2533 24.6742 12.1529C24.6556 12.0895 24.6136 11.9844 24.581 11.9211C24.5483 11.8577 24.5018 11.7789 24.4769 11.7465C24.4536 11.7141 24.3883 11.6492 24.3324 11.6029C24.2703 11.5488 24.1709 11.487 24.0761 11.4422C23.9907 11.4005 23.8695 11.3572 23.809 11.3433C23.7468 11.3294 23.6583 11.3186 23.6148 11.3201ZM4.81462 11.0714C4.15289 11.076 3.80954 11.0807 3.62314 11.0853L3.28767 11.0946C3.1867 11.1765 3.16333 11.2089 3.15401 11.2506C3.14625 11.2848 3.1401 11.7003 3.13855 12.176C3.13699 12.8109 3.14165 13.055 3.15563 13.0952C3.1665 13.1246 3.20065 13.1694 3.23327 13.1941C3.26589 13.2204 3.31717 13.2513 3.34668 13.2637C3.39329 13.2853 3.50833 13.2884 4.15444 13.2884C4.72746 13.2884 4.91547 13.2838 4.9435 13.2699C4.96214 13.259 4.99014 13.2266 5.00567 13.2003C5.03052 13.1539 5.03202 13.0704 5.03668 12.2224L5.04138 11.2954L4.81462 11.0714ZM14.6162 4.58735C10.3445 4.58889 5.94386 4.5935 4.83632 4.59814L2.82477 4.60587C2.71761 4.67538 2.64923 4.73097 2.60263 4.77423C2.55603 4.81749 2.50478 4.88399 2.48614 4.92261C2.45517 4.99192 2.45506 5.01078 2.44274 7.56524L2.44259 7.58758L2.4302 10.1831C2.54514 10.336 2.59795 10.3963 2.62125 10.4133C2.66474 10.4442 2.68807 10.4457 3.33576 10.4565C3.70545 10.4611 8.5535 10.4657 14.1114 10.4673C19.6692 10.4673 24.3944 10.4627 24.612 10.455C24.9615 10.4457 25.0144 10.4395 25.061 10.4133C25.0905 10.3978 25.1371 10.353 25.1666 10.3144C25.2147 10.2495 25.2178 10.234 25.2334 10.0595C25.2427 9.94824 25.2474 8.94866 25.2474 7.57985C25.2474 6.31769 25.2412 5.21618 25.235 5.13115C25.2257 5.01993 25.2117 4.95659 25.1868 4.90715C25.1666 4.86853 25.1091 4.79437 25.0563 4.74339C25.0035 4.69087 24.9414 4.63988 24.915 4.62906C24.8808 4.61515 24.5484 4.60588 23.6257 4.59661C22.9422 4.59043 18.8879 4.5858 14.6162 4.58735Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M1.83211 3.02544C1.90046 3.02389 1.99837 3.03003 2.04963 3.03776C2.11485 3.04857 2.15523 3.06558 2.22045 3.13043V3.72214C2.22045 4.04647 2.21581 4.33069 2.2096 4.35402C2.20184 4.37873 2.17857 4.40967 2.15528 4.42358C2.118 4.4483 2.05272 4.45137 0.845766 4.45909L0.85046 4.02962C0.853567 3.6094 0.855114 3.60009 0.892394 3.51666C0.914148 3.47031 0.95918 3.39614 0.993345 3.35289C1.02752 3.3081 1.08344 3.25099 1.11761 3.22318C1.15178 3.19537 1.22632 3.15052 1.28535 3.12117C1.34748 3.08873 1.43141 3.06248 1.4951 3.05322C1.55257 3.04549 1.62402 3.03625 1.65353 3.03317C1.68304 3.03008 1.76378 3.02698 1.83211 3.02544Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M25.5782 3.0223C25.6574 3.0223 25.8283 3.03003 25.9557 3.03776C26.0846 3.04548 26.2244 3.05942 26.2663 3.06714C26.3114 3.07641 26.3922 3.11503 26.4605 3.15829C26.5242 3.19845 26.6065 3.2664 26.6438 3.30966C26.6795 3.35137 26.7355 3.43789 26.8256 3.61553L26.8333 4.45909L26.2244 4.45756C25.7941 4.45756 25.5984 4.4514 25.5611 4.43904C25.5316 4.42823 25.4944 4.40038 25.4757 4.37721C25.4447 4.33395 25.4431 4.31542 25.4384 3.67737L25.4338 3.0223H25.5782Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M19.7889 2.06755C20.0995 2.066 20.2564 2.07218 20.2922 2.08454C20.3217 2.09535 20.359 2.12008 20.3745 2.1417C20.3978 2.17106 20.4071 2.21432 20.4227 2.48929L20.3232 2.50016C20.2689 2.50479 19.9939 2.51865 19.7112 2.52947C19.4285 2.54028 19.1862 2.54491 19.1706 2.53873C19.1474 2.52944 19.1442 2.5062 19.1442 2.3657C19.1442 2.27612 19.152 2.18654 19.1598 2.16489C19.1675 2.14327 19.1908 2.11855 19.211 2.10773C19.2297 2.09846 19.2654 2.08452 19.2918 2.07834C19.3182 2.07216 19.5403 2.06755 19.7889 2.06755Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M7.77374 2.06602C7.97412 2.06602 8.21179 2.07222 8.30188 2.07995C8.44632 2.09076 8.46808 2.09694 8.49294 2.12938C8.50846 2.14947 8.52399 2.19268 8.5271 2.22665C8.53021 2.26064 8.53643 2.34255 8.54264 2.52793H7.26891L7.25644 2.45531C7.25023 2.4136 7.24559 2.33946 7.24559 2.28848C7.24404 2.22051 7.25332 2.18341 7.27506 2.15096C7.29215 2.12779 7.32944 2.09843 7.35739 2.08607C7.39467 2.07062 7.50346 2.06602 7.77374 2.06602Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M13.6299 1C13.9934 1 14.4407 1.0062 14.624 1.01393C14.8073 1.0232 15.0838 1.04484 15.2375 1.06183C15.3913 1.07883 15.6648 1.11279 15.8434 1.13905C16.022 1.16531 16.2985 1.20857 16.457 1.23792C16.6154 1.26728 16.8981 1.32909 17.0861 1.37544C17.274 1.42333 17.5645 1.50367 17.7307 1.5562C17.8969 1.60718 18.1423 1.68908 18.2744 1.73542C18.4064 1.78177 18.5587 1.84046 18.7093 1.90998L18.7016 1.97488C18.6985 2.01197 18.6907 2.10312 18.686 2.18035C18.6814 2.25759 18.6736 2.36264 18.6627 2.51248H9.0397L9.02885 2.32399C9.02264 2.19577 9.00866 2.10152 8.98692 2.03663C8.96828 1.98411 8.95429 1.93158 8.95429 1.92077C8.95442 1.90992 9.12991 1.84038 9.38456 1.7508C9.62222 1.66738 9.93133 1.56387 10.0727 1.52061C10.214 1.4789 10.4657 1.41095 10.6319 1.36924C10.7981 1.32908 11.0606 1.27035 11.2144 1.23945C11.3682 1.2101 11.6307 1.16378 11.7969 1.13752C11.9631 1.1128 12.1946 1.08031 12.3095 1.06796C12.4245 1.05405 12.6202 1.034 12.7445 1.02319C12.8874 1.00929 13.2105 1.00154 13.6299 1Z" stroke="black" stroke-width="0.5"/>
+                        </g>
+                        </g>
+                        <defs>
+                        <filter id="filter0_dddd_57_152_3" x="0.833313" y="0" width="49" height="51" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                        <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="1" dy="3"/>
+                        <feGaussianBlur stdDeviation="1.5"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 1 0"/>
+                        <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_57_152_3"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="-1" dy="-1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.984314 0 0 0 0 0.941176 0 0 0 0 0.909804 0 0 0 0.9 0"/>
+                        <feBlend mode="normal" in2="effect1_dropShadow_57_152_3" result="effect2_dropShadow_57_152_3"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="1" dy="-1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 0.2 0"/>
+                        <feBlend mode="normal" in2="effect2_dropShadow_57_152_3" result="effect3_dropShadow_57_152_3"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="-1" dy="1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 0.2 0"/>
+                        <feBlend mode="normal" in2="effect3_dropShadow_57_152_3" result="effect4_dropShadow_57_152_3"/>
+                        <feBlend mode="normal" in="SourceGraphic" in2="effect4_dropShadow_57_152_3" result="shape"/>
+                        </filter>
+                        </defs>
+                        </svg>
+                    `;
+                } else {
+                    // Not selected effects button
+                    buttonSvg.innerHTML = `
+                        <svg width="50" height="49" viewBox="0 0 50 49" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g filter="url(#filter0_dddd_57_142_3)">
+                        <rect x="3.83331" y="3" width="42" height="42" rx="9" fill="#D8CFC8"/>
+                        <rect x="4.33331" y="3.5" width="41" height="41" rx="8.5" stroke="#DCC7B6"/>
+                        <g transform="translate(11, 15)">
+                        <path d="M24.3107 16.8788L24.2595 16.9298C24.2098 16.9792 24.2035 16.9808 24.0264 16.9931C23.9254 17.0008 23.6241 17.0024 23.3554 16.9962C23.0852 16.9915 22.8461 16.9823 22.8226 16.9761C22.7993 16.97 22.7744 16.9545 22.7698 16.9421C22.7636 16.9298 22.7558 16.8154 22.7527 16.6903L22.7449 16.4632H24.3185L24.3107 16.8788Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M4.94504 16.6686C4.94194 16.8339 4.93576 16.8818 4.91403 16.9158C4.8985 16.939 4.8705 16.9668 4.85186 16.9777C4.82544 16.9916 4.66233 16.9962 4.18706 16.9962C3.74442 16.9962 3.54245 16.9916 3.50357 16.9777C3.47406 16.9684 3.43517 16.9405 3.41809 16.9158C3.3917 16.8788 3.38704 16.8416 3.38238 16.6686L3.37615 16.4632H4.9482L4.94504 16.6686Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M2.22984 14.6633L2.22822 15.9533H1.98439C1.84924 15.9518 1.6628 15.9472 1.56804 15.9395C1.4143 15.9302 1.38633 15.9225 1.27296 15.8684C1.19529 15.8298 1.11758 15.7757 1.06321 15.7216C1.0104 15.6706 0.956069 15.5964 0.926558 15.5362C0.900156 15.4821 0.870617 15.4018 0.862848 15.3586C0.855081 15.3169 0.844208 15.1809 0.837995 15.0573C0.831783 14.9353 0.831783 14.7592 0.837995 14.668L0.848844 14.5011H2.06518L2.22984 14.6633Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M26.8333 14.9059C26.8333 15.1701 26.8271 15.3215 26.8147 15.374C26.8038 15.4158 26.7697 15.4914 26.7402 15.5409C26.7106 15.5903 26.6438 15.6738 26.5926 15.7263C26.5351 15.785 26.4621 15.8406 26.3984 15.8715C26.3161 15.9132 26.2741 15.924 26.1654 15.9302C26.0924 15.9332 25.8997 15.941 25.4353 15.9533L25.4369 15.4003C25.4369 15.0975 25.4431 14.7932 25.4509 14.7252C25.4618 14.6139 25.4695 14.5969 25.5114 14.5583L25.5611 14.5166H26.8333V14.9059Z" stroke="black" stroke-width="0.5"/>
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M24.9848 3.65885C24.9848 4.00946 24.9926 4.34927 25.0019 4.41271C25.0112 4.48532 25.033 4.55643 25.0594 4.60587C25.0827 4.64758 25.1402 4.72021 25.1868 4.76811C25.2334 4.81444 25.3048 4.87157 25.3468 4.89629C25.3903 4.92101 25.4618 4.94418 25.5239 4.95345C25.583 4.96118 25.8999 4.96891 26.8333 4.96891V14.0531H26.2073C25.8641 14.0531 25.538 14.0608 25.482 14.0686C25.426 14.0763 25.3437 14.1026 25.2971 14.1257C25.2505 14.1505 25.1806 14.1998 25.1402 14.2385C25.1013 14.2771 25.0516 14.342 24.9926 14.4625L24.9848 15.9379H2.67873V14.478L2.62279 14.393C2.59173 14.3466 2.53429 14.274 2.49391 14.2339C2.45508 14.1922 2.3898 14.1411 2.34941 14.1211C2.30281 14.0979 2.22516 14.0778 2.14751 14.0686C2.07605 14.0608 1.75448 14.0531 0.845766 14.0531V4.96891H1.4407C1.76689 4.96737 2.07911 4.96271 2.13504 4.95498C2.21116 4.94571 2.26091 4.92878 2.33702 4.88244C2.39139 4.84999 2.47059 4.78663 2.51253 4.74492C2.55447 4.70166 2.60727 4.62904 2.67096 4.49774L2.68027 3.0223H24.9848V3.65885ZM6.97375 11.3572C6.87589 11.3526 6.77647 11.3588 6.70191 11.3727C6.63822 11.3835 6.5295 11.4113 6.46115 11.4329C6.39281 11.4545 6.29497 11.4993 6.2437 11.5318C6.19245 11.5658 6.11012 11.6322 6.06196 11.6801C6.01226 11.728 5.94851 11.8037 5.919 11.8485C5.88949 11.8918 5.84909 11.9737 5.8289 12.0293C5.79474 12.125 5.7932 12.1498 5.7932 12.5406V12.95C5.89416 13.1524 5.95787 13.2482 5.99825 13.2946C6.03865 13.3394 6.12252 13.4073 6.18153 13.4444C6.24211 13.4799 6.32603 13.5232 6.36797 13.5401C6.41147 13.5571 6.51553 13.5819 6.60096 13.5973C6.719 13.6189 6.80599 13.6236 6.96598 13.6174C7.14771 13.6097 7.19743 13.602 7.331 13.5587C7.41643 13.5325 7.52826 13.4877 7.57953 13.4614C7.63701 13.4305 7.7225 13.3625 7.80482 13.2806C7.87783 13.208 7.96325 13.1045 7.99588 13.0489C8.0285 12.9933 8.06578 12.9098 8.07821 12.8635C8.0984 12.7955 8.10147 12.7152 8.09837 12.4541L8.09213 12.1297C8.01137 11.9628 7.94923 11.8624 7.90108 11.7991C7.85137 11.7357 7.76438 11.6461 7.7038 11.5997C7.64477 11.5534 7.55626 11.4978 7.50967 11.4761C7.46307 11.4561 7.35745 11.4221 7.27668 11.402C7.19125 11.3804 7.06384 11.3619 6.97375 11.3572ZM19.8666 11.6152C19.8246 11.6152 19.7221 11.6214 19.6413 11.6276C19.5233 11.6369 19.4751 11.6492 19.4005 11.6863C19.3493 11.711 19.2654 11.7635 19.2142 11.8021C19.1629 11.8392 19.0868 11.9134 19.0433 11.9644C19.0013 12.0154 18.9376 12.1127 18.905 12.1791C18.86 12.2672 18.8398 12.3321 18.8289 12.4232C18.8165 12.5097 18.8165 12.5808 18.8289 12.6627C18.8382 12.726 18.8646 12.8311 18.8864 12.8944C18.9081 12.9577 18.9501 13.0489 18.978 13.0952C19.0044 13.1416 19.0837 13.2358 19.152 13.3054C19.2405 13.3934 19.3058 13.4444 19.3772 13.4784C19.4394 13.5093 19.5342 13.5371 19.6258 13.5525C19.719 13.568 19.8076 13.5742 19.8666 13.568C19.9178 13.5618 19.9955 13.5479 20.0374 13.5371C20.0809 13.5263 20.1493 13.5016 20.1912 13.4799C20.2347 13.4598 20.3264 13.3873 20.3947 13.3193C20.4646 13.2513 20.5516 13.1508 20.5889 13.0952C20.6261 13.0396 20.6759 12.9531 20.7007 12.9021C20.7334 12.8342 20.7489 12.7708 20.7582 12.6704C20.7644 12.5932 20.7644 12.4696 20.7582 12.3923C20.7473 12.2749 20.7349 12.2332 20.679 12.122C20.6293 12.0215 20.5858 11.9628 20.4957 11.8748C20.4227 11.8006 20.3388 11.7373 20.2705 11.7017C20.1975 11.6631 20.1259 11.6399 20.0529 11.6291C19.9939 11.6199 19.9101 11.6136 19.8666 11.6152ZM14.7793 11.6214C14.7079 11.6168 14.6317 11.6214 14.5851 11.6322C14.5432 11.643 14.4625 11.674 14.4066 11.7002C14.3506 11.7249 14.2636 11.7775 14.2123 11.8161C14.1611 11.8547 14.085 11.9242 14.0446 11.969C14.0027 12.0153 13.9483 12.0942 13.9234 12.1451C13.8986 12.1961 13.8675 12.2919 13.8551 12.3583C13.8427 12.4232 13.8318 12.5174 13.8318 12.5669C13.8333 12.6148 13.8427 12.7075 13.8536 12.7708C13.8644 12.8342 13.8877 12.9175 13.9048 12.9562C13.9203 12.9948 13.9576 13.0612 13.9871 13.103C14.0166 13.1462 14.0819 13.225 14.1332 13.2791C14.186 13.3332 14.2667 13.4027 14.3133 13.4352C14.3599 13.4676 14.4298 13.5078 14.4686 13.5248C14.5075 13.5402 14.5634 13.5587 14.5929 13.5649C14.6224 13.5695 14.7141 13.568 14.7949 13.5587C14.8757 13.5495 14.9875 13.5309 15.0434 13.5186C15.0993 13.5047 15.1894 13.4722 15.2453 13.4444C15.3152 13.412 15.3852 13.3579 15.4722 13.2729C15.5638 13.1833 15.6104 13.1215 15.6446 13.0489C15.671 12.9933 15.7036 12.9037 15.7191 12.848C15.7393 12.7816 15.7486 12.6951 15.7486 12.5931C15.7486 12.4804 15.7393 12.4062 15.7129 12.315C15.6943 12.2471 15.6523 12.1466 15.6181 12.091C15.5855 12.0354 15.5109 11.9442 15.4519 11.8871C15.3774 11.8145 15.3121 11.7697 15.2298 11.7311C15.1661 11.7017 15.0636 11.6662 15.0046 11.6538C14.9455 11.6399 14.843 11.626 14.7793 11.6214ZM12.3328 11.6322C12.2303 11.6306 12.1185 11.6353 12.0843 11.6446C12.0501 11.6523 11.9631 11.6878 11.8901 11.7233C11.7891 11.7728 11.7301 11.816 11.64 11.9041C11.5468 11.9968 11.508 12.0494 11.4583 12.1529C11.4241 12.2255 11.3884 12.3213 11.379 12.3661C11.3697 12.4094 11.362 12.5113 11.362 12.5901C11.362 12.6781 11.3729 12.7754 11.3915 12.848C11.407 12.9114 11.4365 12.9948 11.4551 13.0335C11.4738 13.0721 11.5235 13.1477 11.5639 13.2034C11.6059 13.2605 11.6773 13.3316 11.7286 13.3671C11.7798 13.4027 11.8497 13.4459 11.887 13.4645C11.9227 13.4815 12.0066 13.5124 12.0734 13.5294C12.1542 13.5525 12.2396 13.5633 12.3406 13.5633C12.44 13.5649 12.5192 13.5556 12.5814 13.5371C12.6326 13.5216 12.7165 13.4846 12.7677 13.4537C12.819 13.4228 12.8998 13.3579 12.9464 13.3116C12.993 13.2652 13.0582 13.1849 13.0893 13.1339C13.1203 13.0829 13.1669 12.9964 13.1902 12.9408C13.2322 12.8435 13.2338 12.8342 13.2338 12.5546C13.2338 12.2765 13.2322 12.2671 13.1918 12.1837C13.1685 12.1358 13.1033 12.0509 13.0443 11.9906C12.9852 11.9319 12.8843 11.847 12.8206 11.8021C12.7569 11.7589 12.6637 11.7033 12.6124 11.6801C12.5286 11.6399 12.5006 11.6353 12.3328 11.6322ZM9.8133 11.6044C9.73718 11.6013 9.65016 11.6044 9.61909 11.6121C9.58646 11.6214 9.51655 11.6492 9.46374 11.6755C9.40938 11.7033 9.32705 11.7511 9.28046 11.782C9.23386 11.8145 9.16553 11.8701 9.1298 11.9041C9.09252 11.9396 9.03349 12.0107 8.99777 12.0648C8.96204 12.1173 8.9123 12.2054 8.88589 12.261C8.84085 12.3568 8.8378 12.3723 8.8378 12.5546C8.8378 12.7059 8.84396 12.7677 8.86881 12.8403C8.88589 12.8913 8.93404 12.9933 8.97753 13.0674C9.01947 13.1416 9.08323 13.2358 9.11895 13.276C9.15312 13.3177 9.22297 13.378 9.27423 13.4104C9.32393 13.4444 9.40475 13.4846 9.45135 13.5C9.49795 13.5155 9.57565 13.5325 9.62224 13.5371C9.66886 13.5433 9.77136 13.5386 9.84746 13.5278C9.92513 13.517 10.051 13.4892 10.1271 13.4645C10.2063 13.4382 10.3041 13.3934 10.3523 13.361C10.3989 13.3286 10.4719 13.2605 10.5123 13.2096C10.5542 13.1601 10.6132 13.0736 10.6443 13.018C10.6754 12.9624 10.7142 12.8758 10.7298 12.8249C10.7515 12.7569 10.7608 12.6858 10.7608 12.5546C10.7623 12.4325 10.7546 12.3506 10.7375 12.2919C10.7236 12.2456 10.6769 12.1544 10.6334 12.091C10.5915 12.0277 10.5092 11.9288 10.4502 11.8716C10.3927 11.8145 10.3026 11.7434 10.2513 11.7141C10.2001 11.6832 10.1115 11.6477 10.0541 11.6353C9.99503 11.623 9.88786 11.609 9.8133 11.6044ZM17.3734 11.6229C17.3175 11.6183 17.2274 11.6214 17.1715 11.6291C17.1109 11.6384 17.0177 11.6693 16.9385 11.7063C16.8655 11.7403 16.7645 11.7991 16.7133 11.8346C16.662 11.8717 16.5952 11.9319 16.5641 11.969C16.5331 12.0061 16.4864 12.0787 16.46 12.1297C16.4352 12.1807 16.3995 12.2718 16.3809 12.3305C16.3581 12.4026 16.3467 12.4798 16.3467 12.5622C16.3467 12.6302 16.3576 12.7353 16.3716 12.794C16.3855 12.8527 16.4166 12.9438 16.4414 12.9948C16.4663 13.0458 16.5207 13.1324 16.5626 13.188C16.6045 13.2436 16.6806 13.3208 16.7303 13.361C16.78 13.4012 16.8531 13.4521 16.8919 13.4722C16.9308 13.4938 17.0115 13.5186 17.0705 13.5278C17.1342 13.5386 17.2305 13.5417 17.3035 13.5356C17.3718 13.5294 17.4915 13.5093 17.5676 13.4892C17.6452 13.4706 17.7354 13.4413 17.7695 13.4243C17.8037 13.4073 17.8674 13.3625 17.9094 13.327C17.9528 13.2915 18.0212 13.2219 18.0616 13.174C18.1019 13.1262 18.1563 13.0458 18.1812 12.9948C18.2061 12.9438 18.2371 12.8434 18.2526 12.7708C18.2697 12.6812 18.2759 12.6055 18.2697 12.5314C18.2635 12.4727 18.2464 12.3784 18.2293 12.3228C18.2122 12.2672 18.1719 12.1838 18.1408 12.1374C18.1097 12.0911 18.0258 11.9968 17.9559 11.9288C17.886 11.8608 17.7897 11.782 17.7447 11.7558C17.6981 11.728 17.6188 11.6878 17.5676 11.6678C17.5163 11.6477 17.4294 11.626 17.3734 11.6229ZM23.6148 11.3201C23.5697 11.3201 23.4905 11.3325 23.4393 11.348C23.388 11.3634 23.3181 11.3865 23.2839 11.402C23.2497 11.4174 23.1768 11.4592 23.1209 11.4963C23.0649 11.5333 22.9779 11.6075 22.9251 11.6616C22.8739 11.7141 22.8055 11.8037 22.7729 11.8593C22.7403 11.9149 22.6983 11.9983 22.6781 12.0447C22.6579 12.091 22.63 12.1714 22.616 12.2224C22.6005 12.2733 22.588 12.3675 22.588 12.4309C22.588 12.4942 22.6005 12.5916 22.616 12.6472C22.63 12.7028 22.6611 12.7893 22.6844 12.8403C22.7077 12.8913 22.7543 12.9748 22.79 13.0257C22.8242 13.0767 22.88 13.1432 22.9126 13.1725C22.9468 13.2034 23.023 13.2574 23.082 13.293C23.141 13.3285 23.2326 13.3718 23.2839 13.3903C23.3491 13.4135 23.4284 13.4258 23.548 13.4305C23.6645 13.4367 23.7624 13.4305 23.8587 13.415C23.9565 13.3965 24.0373 13.3702 24.1305 13.3254C24.233 13.2744 24.2905 13.2312 24.3884 13.1354C24.4722 13.0504 24.5313 12.9747 24.5701 12.9021C24.6012 12.8434 24.6416 12.7522 24.6587 12.7013C24.682 12.6379 24.6959 12.5545 24.7006 12.4386C24.7084 12.2904 24.7053 12.2533 24.6742 12.1529C24.6556 12.0895 24.6136 11.9844 24.581 11.9211C24.5483 11.8577 24.5018 11.7789 24.4769 11.7465C24.4536 11.7141 24.3883 11.6492 24.3324 11.6029C24.2703 11.5488 24.1709 11.487 24.0761 11.4422C23.9907 11.4005 23.8695 11.3572 23.809 11.3433C23.7468 11.3294 23.6583 11.3186 23.6148 11.3201ZM4.81462 11.0714C4.15289 11.076 3.80954 11.0807 3.62314 11.0853L3.28767 11.0946C3.1867 11.1765 3.16333 11.2089 3.15401 11.2506C3.14625 11.2848 3.1401 11.7003 3.13855 12.176C3.13699 12.8109 3.14165 13.055 3.15563 13.0952C3.1665 13.1246 3.20065 13.1694 3.23327 13.1941C3.26589 13.2204 3.31717 13.2513 3.34668 13.2637C3.39329 13.2853 3.50833 13.2884 4.15444 13.2884C4.72746 13.2884 4.91547 13.2838 4.9435 13.2699C4.96214 13.259 4.99014 13.2266 5.00567 13.2003C5.03052 13.1539 5.03202 13.0704 5.03668 12.2224L5.04138 11.2954L4.81462 11.0714ZM14.6162 4.58735C10.3445 4.58889 5.94386 4.5935 4.83632 4.59814L2.82477 4.60587C2.71761 4.67538 2.64923 4.73097 2.60263 4.77423C2.55603 4.81749 2.50478 4.88399 2.48614 4.92261C2.45517 4.99192 2.45506 5.01078 2.44274 7.56524L2.44259 7.58758L2.4302 10.1831C2.54514 10.336 2.59795 10.3963 2.62125 10.4133C2.66474 10.4442 2.68807 10.4457 3.33576 10.4565C3.70545 10.4611 8.5535 10.4657 14.1114 10.4673C19.6692 10.4673 24.3944 10.4627 24.612 10.455C24.9615 10.4457 25.0144 10.4395 25.061 10.4133C25.0905 10.3978 25.1371 10.353 25.1666 10.3144C25.2147 10.2495 25.2178 10.234 25.2334 10.0595C25.2427 9.94824 25.2474 8.94866 25.2474 7.57985C25.2474 6.31769 25.2412 5.21618 25.235 5.13115C25.2257 5.01993 25.2117 4.95659 25.1868 4.90715C25.1666 4.86853 25.1091 4.79437 25.0563 4.74339C25.0035 4.69087 24.9414 4.63988 24.915 4.62906C24.8808 4.61515 24.5484 4.60588 23.6257 4.59661C22.9422 4.59043 18.8879 4.5858 14.6162 4.58735Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M1.83211 3.02544C1.90046 3.02389 1.99837 3.03003 2.04963 3.03776C2.11485 3.04857 2.15523 3.06558 2.22045 3.13043V3.72214C2.22045 4.04647 2.21581 4.33069 2.2096 4.35402C2.20184 4.37873 2.17857 4.40967 2.15528 4.42358C2.118 4.4483 2.05272 4.45137 0.845766 4.45909L0.85046 4.02962C0.853567 3.6094 0.855114 3.60009 0.892394 3.51666C0.914148 3.47031 0.95918 3.39614 0.993345 3.35289C1.02752 3.3081 1.08344 3.25099 1.11761 3.22318C1.15178 3.19537 1.22632 3.15052 1.28535 3.12117C1.34748 3.08873 1.43141 3.06248 1.4951 3.05322C1.55257 3.04549 1.62402 3.03625 1.65353 3.03317C1.68304 3.03008 1.76378 3.02698 1.83211 3.02544Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M25.5782 3.0223C25.6574 3.0223 25.8283 3.03003 25.9557 3.03776C26.0846 3.04548 26.2244 3.05942 26.2663 3.06714C26.3114 3.07641 26.3922 3.11503 26.4605 3.15829C26.5242 3.19845 26.6065 3.2664 26.6438 3.30966C26.6795 3.35137 26.7355 3.43789 26.8256 3.61553L26.8333 4.45909L26.2244 4.45756C25.7941 4.45756 25.5984 4.4514 25.5611 4.43904C25.5316 4.42823 25.4944 4.40038 25.4757 4.37721C25.4447 4.33395 25.4431 4.31542 25.4384 3.67737L25.4338 3.0223H25.5782Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M19.7889 2.06755C20.0995 2.066 20.2564 2.07218 20.2922 2.08454C20.3217 2.09535 20.359 2.12008 20.3745 2.1417C20.3978 2.17106 20.4071 2.21432 20.4227 2.48929L20.3232 2.50016C20.2689 2.50479 19.9939 2.51865 19.7112 2.52947C19.4285 2.54028 19.1862 2.54491 19.1706 2.53873C19.1474 2.52944 19.1442 2.5062 19.1442 2.3657C19.1442 2.27612 19.152 2.18654 19.1598 2.16489C19.1675 2.14327 19.1908 2.11855 19.211 2.10773C19.2297 2.09846 19.2654 2.08452 19.2918 2.07834C19.3182 2.07216 19.5403 2.06755 19.7889 2.06755Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M7.77374 2.06602C7.97412 2.06602 8.21179 2.07222 8.30188 2.07995C8.44632 2.09076 8.46808 2.09694 8.49294 2.12938C8.50846 2.14947 8.52399 2.19268 8.5271 2.22665C8.53021 2.26064 8.53643 2.34255 8.54264 2.52793H7.26891L7.25644 2.45531C7.25023 2.4136 7.24559 2.33946 7.24559 2.28848C7.24404 2.22051 7.25332 2.18341 7.27506 2.15096C7.29215 2.12779 7.32944 2.09843 7.35739 2.08607C7.39467 2.07062 7.50346 2.06602 7.77374 2.06602Z" stroke="black" stroke-width="0.5"/>
+                        <path d="M13.6299 1C13.9934 1 14.4407 1.0062 14.624 1.01393C14.8073 1.0232 15.0838 1.04484 15.2375 1.06183C15.3913 1.07883 15.6648 1.11279 15.8434 1.13905C16.022 1.16531 16.2985 1.20857 16.457 1.23792C16.6154 1.26728 16.8981 1.32909 17.0861 1.37544C17.274 1.42333 17.5645 1.50367 17.7307 1.5562C17.8969 1.60718 18.1423 1.68908 18.2744 1.73542C18.4064 1.78177 18.5587 1.84046 18.7093 1.90998L18.7016 1.97488C18.6985 2.01197 18.6907 2.10312 18.686 2.18035C18.6814 2.25759 18.6736 2.36264 18.6627 2.51248H9.0397L9.02885 2.32399C9.02264 2.19577 9.00866 2.10152 8.98692 2.03663C8.96828 1.98411 8.95429 1.93158 8.95429 1.92077C8.95442 1.90992 9.12991 1.84038 9.38456 1.7508C9.62222 1.66738 9.93133 1.56387 10.0727 1.52061C10.214 1.4789 10.4657 1.41095 10.6319 1.36924C10.7981 1.32908 11.0606 1.27035 11.2144 1.23945C11.3682 1.2101 11.6307 1.16378 11.7969 1.13752C11.9631 1.1128 12.1946 1.08031 12.3095 1.06796C12.4245 1.05405 12.6202 1.034 12.7445 1.02319C12.8874 1.00929 13.2105 1.00154 13.6299 1Z" stroke="black" stroke-width="0.5"/>
+                        </g>
+                        </g>
+                        <defs>
+                        <filter id="filter0_dddd_57_142_3" x="0.833313" y="0" width="49" height="49" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                        <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="1" dy="1"/>
+                        <feGaussianBlur stdDeviation="1.5"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 0.9 0"/>
+                        <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_57_142_3"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="-1" dy="-1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.984314 0 0 0 0 0.941176 0 0 0 0 0.909804 0 0 0 0.9 0"/>
+                        <feBlend mode="normal" in2="effect1_dropShadow_57_142_3" result="effect2_dropShadow_57_142_3"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="1" dy="-1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 0.2 0"/>
+                        <feBlend mode="normal" in2="effect2_dropShadow_57_142_3" result="effect3_dropShadow_57_142_3"/>
+                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                        <feOffset dx="-1" dy="1"/>
+                        <feGaussianBlur stdDeviation="1"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.709804 0 0 0 0 0.682353 0 0 0 0 0.658824 0 0 0 0.2 0"/>
+                        <feBlend mode="normal" in2="effect3_dropShadow_57_142_3" result="effect4_dropShadow_57_142_3"/>
+                        <feBlend mode="normal" in="SourceGraphic" in2="effect4_dropShadow_57_142_3" result="shape"/>
+                        </filter>
+                        </defs>
+                        </svg>
+                    `;
+                }
+            }
+        }
+
+        // Add click handlers for monitor buttons
+        const headphonesButton = document.querySelector('.headphones-button');
+        const backingButton = document.querySelector('.backing-button');
+        
+        if (headphonesButton) {
+            headphonesButton.addEventListener('click', function() {
+                // Remove selected class from all tracks
+                tracks.forEach(t => {
+                    t.classList.remove('selected');
+                    t.classList.add('default');
+                });
+                
+                // Remove selected class from other monitor buttons
+                const monitorButtons = document.querySelectorAll('.ButtonComponent');
+                monitorButtons.forEach(btn => {
+                    btn.classList.remove('selected');
+                    updateButtonAppearance(btn, false);
+                });
+                
+                // Add selected class to headphones button
+                this.classList.add('selected');
+                updateButtonAppearance(this, true);
+                
+                // Set active fader to monitor mode
+                activeFaderType = 'monitor';
+                activeFaderName = 'Headphones';
+                
+                // Update fader display
+                updateFaderDisplay();
+            });
+        }
+        
+        if (backingButton) {
+            backingButton.addEventListener('click', function() {
+                // Remove selected class from all tracks
+                tracks.forEach(t => {
+                    t.classList.remove('selected');
+                    t.classList.add('default');
+                });
+                
+                // Remove selected class from other monitor buttons
+                const monitorButtons = document.querySelectorAll('.ButtonComponent');
+                monitorButtons.forEach(btn => {
+                    btn.classList.remove('selected');
+                    updateButtonAppearance(btn, false);
+                });
+                
+                // Add selected class to backing button
+                this.classList.add('selected');
+                updateButtonAppearance(this, true);
+                
+                // Set active fader to monitor mode
+                activeFaderType = 'monitor';
+                activeFaderName = 'Backing';
+                
+                // Update fader display
+                updateFaderDisplay();
+            });
+        }
+        
+        // Initialize faders after all functions are declared
+        initializeFaders();
+        
+        // Update fader display for initially selected track
+        updateFaderDisplay();
+        
+        // Initialize button appearances
+        const monitorButtons = document.querySelectorAll('.ButtonComponent');
+        monitorButtons.forEach(btn => {
+            updateButtonAppearance(btn, btn.classList.contains('selected'));
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1>User</h1>
+        <div class="status">
+          <div class="status-indicator"></div>
+          <span class="status-text">Connected</span>
+        </div>
+      </header>
+      <main>
+        <div class="fader-area-container">
+          <div data-layer="Active-Screen=Large Fader" class="ActiveScreenLargeFader fader-area" style="width: 100%; height: 450px; padding-left: 10px; padding-right: 10px; padding-top: 20px; padding-bottom: 20px; background: #D4CBC4; box-shadow: inset 1px 1px 3px #908a85e6, inset -1px -1px 2px #ffffffe6, inset 1px -1px 2px #908a8533, inset -1px 1px 2px #908a8533, -1px -1px 2px #908a8580, 1px 1px 2px #ffffff4c; border-radius: 29px; flex-direction: column; justify-content: center; align-items: center; gap: 12px; display: flex; margin-bottom: 20px;">
+          <div data-layer="dB Reading" class="DbReading" style="align-self: stretch; height: 48px; overflow: hidden; justify-content: flex-start; align-items: flex-start; display: inline-flex">
+            <div data-layer="Spacer" class="Spacer" style="flex: 1 1 0; align-self: stretch; padding: 10px"></div>
+            <div data-layer="Current dB Wrapper" class="CurrentDbWrapper" style="flex: 1 1 0; align-self: stretch; flex-direction: column; justify-content: flex-end; align-items: center; gap: 10px; display: inline-flex">
+              <div data-layer="db indicator" class="DbIndicator" style="flex-direction: column; justify-content: center; align-items: flex-end; gap: 3px; display: flex">
+                <div data-layer="2.4" class="4" style="color: #383838; font-size: 16px; font-family: Futura; font-weight: 800; word-wrap: break-word">2.4</div>
+                <div data-layer="dB" class="Db" style="color: var(--Secondary-Text-Color, #818181); font-size: 12px; font-family: Inter; font-weight: 400; word-wrap: break-word">dB</div>
+              </div>
+            </div>
+            <div data-layer="Options Icon Wrapper" class="OptionsIconWrapper" style="flex: 1 1 0; align-self: stretch; padding: 10px; flex-direction: column; justify-content: flex-start; align-items: flex-end; gap: 10px; display: inline-flex">
+              <div data-svg-wrapper data-layer="Options Icon" class="OptionsIcon" style="cursor: pointer;">
+                <svg width="19" height="13" viewBox="0 0 19 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5.72222 1H18M5.72222 6.5H18M5.72222 12H18M1 1H1.00944M1 6.5H1.00944M1 12H1.00944" stroke="var(--Secondary-Text-Color, #818181)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div data-layer="Fader Wrapper" class="FaderWrapper" style="align-self: stretch; flex: 1 1 0; padding-left: 14px; padding-right: 14px; justify-content: space-between; align-items: center; display: inline-flex">
+            <div data-layer="Fader DB Range" class="FaderDbRange" style="flex: 1 1 0; align-self: stretch; padding-left: 7px; padding-right: 7px; padding-top: 12px; padding-bottom: 12px; opacity: 0.68; flex-direction: column; justify-content: space-between; align-items: flex-end; display: inline-flex">
+              <div data-layer="+6" class="6" style="color: var(--Secondary-Text-Color, #818181); font-size: 13px; font-family: Futura; font-weight: 500; word-wrap: break-word">+6</div>
+              <div data-layer="0" style="color: var(--Secondary-Text-Color, #818181); font-size: 13px; font-family: Futura; font-weight: 500; word-wrap: break-word">0</div>
+              <div data-layer="-20" class="20" style="color: var(--Secondary-Text-Color, #818181); font-size: 13px; font-family: Futura; font-weight: 500; word-wrap: break-word">-20</div>
+              <div data-layer="-40" class="40" style="color: var(--Secondary-Text-Color, #818181); font-size: 13px; font-family: Futura; font-weight: 500; word-wrap: break-word">-40</div>
+              <div data-layer="-60" class="60" style="color: var(--Secondary-Text-Color, #818181); font-size: 13px; font-family: Futura; font-weight: 500; word-wrap: break-word">-60</div>
+            </div>
+            <div data-layer="Fader" data-property-1="Fader" class="Fader" style="width: 100%; align-self: stretch; max-width: 101px; padding-top: 13px; padding-bottom: 13px; overflow: hidden; border-radius: 5px; flex-direction: column; justify-content: center; align-items: center; gap: 10px; display: inline-flex">
+              <div data-layer="Fader" class="Fader" style="align-self: stretch; flex: 1 1 0; padding-left: 3px; padding-right: 3px; flex-direction: column; justify-content: space-between; align-items: center; display: flex">
+                <div data-layer="Fader Top Wrapper" class="FaderTopWrapper" style="align-self: stretch; flex: 1 1 0; padding-left: 27px; padding-right: 27px; justify-content: center; align-items: center; gap: 10px; display: inline-flex">
+                  <div data-layer="Fader Top" class="FaderTop" style="flex: 1 1 0; align-self: stretch; max-width: 24px; min-width: 12px; background: #C7C7C7; box-shadow: 1px 1px 3px rgba(147, 147, 147, 0.90) inset; border-radius: 3px"></div>
+                </div>
+                <div data-layer="Fader Handle Wrapper" class="FaderHandleWrapper" style="align-self: stretch; padding-left: 15px; padding-right: 15px; flex-direction: column; justify-content: center; align-items: center; gap: 10px; display: flex">
+                  <div data-svg-wrapper data-layer="Fader Handle" class="FaderHandle">
+                    <svg width="57" height="37" viewBox="0 0 57 37" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g filter="url(#filter0_dd_51_2321)">
+                    <rect x="8" y="6.5" width="41" height="20" rx="4" fill="#DEDEDE"/>
+                    </g>
+                    <defs>
+                    <filter id="filter0_dd_51_2321" x="0" y="0.5" width="57" height="36" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                    <feMorphology radius="2" operator="dilate" in="SourceAlpha" result="effect1_dropShadow_51_2321"/>
+                    <feOffset dy="2"/>
+                    <feGaussianBlur stdDeviation="3"/>
+                    <feColorMatrix type="matrix" values="0 0 0 0 0.235294 0 0 0 0 0.25098 0 0 0 0 0.262745 0 0 0 0.15 0"/>
+                    <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_51_2321"/>
+                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                    <feOffset dy="1"/>
+                    <feGaussianBlur stdDeviation="1"/>
+                    <feColorMatrix type="matrix" values="0 0 0 0 0.235294 0 0 0 0 0.25098 0 0 0 0 0.262745 0 0 0 0.3 0"/>
+                    <feBlend mode="normal" in2="effect1_dropShadow_51_2321" result="effect2_dropShadow_51_2321"/>
+                    <feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_51_2321" result="shape"/>
+                    </filter>
+                    </defs>
+                    </svg>
+                  </div>
+                </div>
+                <div data-layer="Fader Active Wrapper" class="FaderActiveWrapper" style="align-self: stretch; flex: 1 1 0; padding-left: 27px; padding-right: 27px; justify-content: center; align-items: center; gap: 10px; display: inline-flex">
+                  <div data-layer="Fader Active" class="FaderActive" style="flex: 1 1 0; align-self: stretch; max-width: 24px; min-width: 12px; background: #CF4343; box-shadow: 1px 1px 3px rgba(161, 99, 60, 0.90) inset; border-radius: 3px"></div>
+                </div>
+              </div>
+            </div>
+            <div data-layer="Fader DB Range" class="FaderDbRange" style="flex: 1 1 0; align-self: stretch; padding-top: 12px; padding-bottom: 12px; opacity: 0.68"></div>
+          </div>
+        </div>
+        
+        <div data-layer="Active-Screen=FX Menu" class="ActiveScreenFxMenu fader-area" style="width: 100%; height: 450px; padding-left: 10px; padding-right: 10px; padding-top: 20px; padding-bottom: 20px; background: #D4CBC4; box-shadow: inset 1px 1px 3px #908a85e6, inset -1px -1px 2px #ffffffe6, inset 1px -1px 2px #908a8533, inset -1px 1px 2px #908a8533, -1px -1px 2px #908a8580, 1px 1px 2px #ffffff4c; border-radius: 29px; flex-direction: column; justify-content: flex-start; align-items: center; display: none; margin-bottom: 20px;">
+          <div data-layer="dB Reading" class="DbReading" style="align-self: stretch; height: 48px; overflow: hidden; justify-content: flex-start; align-items: flex-start; display: inline-flex">
+            <div data-layer="Spacer" class="Spacer" style="flex: 1 1 0; align-self: stretch; padding: 10px"></div>
+            <div data-layer="Current dB Wrapper" class="CurrentDbWrapper" style="flex: 1 1 0; align-self: stretch; flex-direction: column; justify-content: flex-end; align-items: center; gap: 10px; display: inline-flex"></div>
+            <div data-layer="Options Icon Wrapper" class="OptionsIconWrapper" style="flex: 1 1 0; align-self: stretch; padding: 10px; flex-direction: column; justify-content: flex-start; align-items: flex-end; gap: 10px; display: inline-flex">
+              <div data-svg-wrapper data-layer="Options Icon" class="OptionsIcon" style="cursor: pointer;">
+                <svg width="19" height="13" viewBox="0 0 19 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5.72222 1H18M5.72222 6.5H18M5.72222 12H18M1 1H1.00944M1 6.5H1.00944M1 12H1.00944" stroke="var(--Secondary-Text-Color, #818181)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div data-layer="Effect Fader Wrapper" class="EffectFaderWrapper" style="align-self: stretch; flex: 1 1 0; padding-left: 28px; padding-right: 28px; justify-content: center; align-items: center; gap: 64px; display: inline-flex">
+            <div data-layer="Effect Fader" class="EffectFader" style="width: 36px; align-self: stretch; flex-direction: column; justify-content: flex-start; align-items: center; gap: 18px; display: inline-flex">
+              <div data-layer="db indicator" class="DbIndicator" style="flex-direction: column; justify-content: center; align-items: flex-end; gap: 3px; display: flex">
+                <div data-layer="Value" class="Value" style="color: var(--Secondary-Text-Color, #818181); font-size: 16px; font-family: Futura; font-weight: 800; word-wrap: break-word">2.4</div>
+                <div data-layer="Unit" class="Unit" style="color: var(--Secondary-Text-Color, #818181); font-size: 12px; font-family: Inter; font-weight: 400; word-wrap: break-word">%</div>
+              </div>
+              <div data-layer="Fader" data-property-1="Fader" class="Fader" style="align-self: stretch; flex: 1 1 0; padding-top: 13px; padding-bottom: 13px; overflow: hidden; border-radius: 5px; flex-direction: column; justify-content: center; align-items: center; gap: 5px; display: inline-flex">
+                <div data-layer="Fader" class="Fader" style="align-self: stretch; flex: 1 1 0; padding-left: 1px; padding-right: 1px; flex-direction: column; justify-content: space-between; align-items: center; display: flex">
+                  <div data-layer="Fader Top Wrapper" class="FaderTopWrapper" style="align-self: stretch; flex: 1 1 0; padding-left: 8px; padding-right: 8px; justify-content: center; align-items: center; gap: 5px; display: inline-flex">
+                    <div data-layer="Fader Top" class="FaderTop" style="flex: 1 1 0; align-self: stretch; max-width: 12px; min-width: 8px; background: #C7C7C7; box-shadow: 1px 1px 2px rgba(147, 147, 147, 0.90) inset; border-radius: 2px"></div>
+                  </div>
+                  <div data-layer="Fader Handle Wrapper" class="FaderHandleWrapper" style="align-self: stretch; padding-left: 5px; padding-right: 5px; flex-direction: column; justify-content: center; align-items: center; gap: 5px; display: flex">
+                    <div data-svg-wrapper data-layer="Fader Handle" class="FaderHandle">
+                      <svg width="26" height="18" viewBox="0 0 26 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <g filter="url(#filter0_dd_51_2322)">
+                      <rect x="3" y="3" width="20" height="10" rx="2" fill="#DEDEDE"/>
+                      </g>
+                      <defs>
+                      <filter id="filter0_dd_51_2322" x="0" y="0" width="26" height="18" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                      <feMorphology radius="1" operator="dilate" in="SourceAlpha" result="effect1_dropShadow_51_2322"/>
+                      <feOffset dy="1"/>
+                      <feGaussianBlur stdDeviation="1.5"/>
+                      <feColorMatrix type="matrix" values="0 0 0 0 0.235294 0 0 0 0 0.25098 0 0 0 0 0.262745 0 0 0 0.15 0"/>
+                      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_51_2322"/>
+                      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                      <feOffset dy="0.5"/>
+                      <feGaussianBlur stdDeviation="0.5"/>
+                      <feColorMatrix type="matrix" values="0 0 0 0 0.235294 0 0 0 0 0.25098 0 0 0 0 0.262745 0 0 0 0.3 0"/>
+                      <feBlend mode="normal" in2="effect1_dropShadow_51_2322" result="effect2_dropShadow_51_2322"/>
+                      <feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_51_2322" result="shape"/>
+                      </filter>
+                      </defs>
+                      </svg>
+                    </div>
+                  </div>
+                  <div data-layer="Fader Active Wrapper" class="FaderActiveWrapper" style="align-self: stretch; flex: 1 1 0; padding-left: 8px; padding-right: 8px; justify-content: center; align-items: center; gap: 5px; display: inline-flex">
+                    <div data-layer="Fader Active" class="FaderActive" style="flex: 1 1 0; align-self: stretch; max-width: 12px; min-width: 8px; background: #CF4343; box-shadow: 1px 1px 2px rgba(161, 99, 60, 0.90) inset; border-radius: 2px"></div>
+                  </div>
+                </div>
+              </div>
+              <div data-layer="Effect Label" class="EffectLabel" style="align-self: stretch; flex-direction: column; justify-content: flex-start; align-items: center; gap: 4px; display: flex">
+                <div data-layer="Effect" class="Effect" style="color: black; font-size: 13px; font-family: Afacad; font-weight: 500; word-wrap: break-word">Reverb</div>
+                <div data-layer="Parameter" class="Parameter" style="align-self: stretch; text-align: center; color: black; font-size: 10px; font-family: Futura; font-weight: 500; word-wrap: break-word">Dry / Wet</div>
+              </div>
+            </div>
+            <div data-layer="Effect Fader" class="EffectFader" style="width: 36px; align-self: stretch; flex-direction: column; justify-content: flex-start; align-items: center; gap: 18px; display: inline-flex">
+              <div data-layer="db indicator" class="DbIndicator" style="flex-direction: column; justify-content: center; align-items: flex-end; gap: 3px; display: flex">
+                <div data-layer="Value" class="Value" style="color: var(--Secondary-Text-Color, #818181); font-size: 16px; font-family: Futura; font-weight: 800; word-wrap: break-word">2.4</div>
+                <div data-layer="Unit" class="Unit" style="color: var(--Secondary-Text-Color, #818181); font-size: 12px; font-family: Inter; font-weight: 400; word-wrap: break-word">%</div>
+              </div>
+              <div data-layer="Fader" data-property-1="Fader" class="Fader" style="align-self: stretch; flex: 1 1 0; padding-top: 13px; padding-bottom: 13px; overflow: hidden; border-radius: 5px; flex-direction: column; justify-content: center; align-items: center; gap: 5px; display: inline-flex">
+                <div data-layer="Fader" class="Fader" style="align-self: stretch; flex: 1 1 0; padding-left: 1px; padding-right: 1px; flex-direction: column; justify-content: space-between; align-items: center; display: flex">
+                  <div data-layer="Fader Top Wrapper" class="FaderTopWrapper" style="align-self: stretch; flex: 1 1 0; padding-left: 8px; padding-right: 8px; justify-content: center; align-items: center; gap: 5px; display: inline-flex">
+                    <div data-layer="Fader Top" class="FaderTop" style="flex: 1 1 0; align-self: stretch; max-width: 12px; min-width: 8px; background: #C7C7C7; box-shadow: 1px 1px 2px rgba(147, 147, 147, 0.90) inset; border-radius: 2px"></div>
+                  </div>
+                  <div data-layer="Fader Handle Wrapper" class="FaderHandleWrapper" style="align-self: stretch; padding-left: 5px; padding-right: 5px; flex-direction: column; justify-content: center; align-items: center; gap: 5px; display: flex">
+                    <div data-svg-wrapper data-layer="Fader Handle" class="FaderHandle">
+                      <svg width="26" height="18" viewBox="0 0 26 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <g filter="url(#filter0_dd_51_2323)">
+                      <rect x="3" y="3" width="20" height="10" rx="2" fill="#DEDEDE"/>
+                      </g>
+                      <defs>
+                      <filter id="filter0_dd_51_2323" x="0" y="0" width="26" height="18" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                      <feMorphology radius="1" operator="dilate" in="SourceAlpha" result="effect1_dropShadow_51_2323"/>
+                      <feOffset dy="1"/>
+                      <feGaussianBlur stdDeviation="1.5"/>
+                      <feColorMatrix type="matrix" values="0 0 0 0 0.235294 0 0 0 0 0.25098 0 0 0 0 0.262745 0 0 0 0.15 0"/>
+                      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_51_2323"/>
+                      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                      <feOffset dy="0.5"/>
+                      <feGaussianBlur stdDeviation="0.5"/>
+                      <feColorMatrix type="matrix" values="0 0 0 0 0.235294 0 0 0 0 0.25098 0 0 0 0 0.262745 0 0 0 0.3 0"/>
+                      <feBlend mode="normal" in2="effect1_dropShadow_51_2323" result="effect2_dropShadow_51_2323"/>
+                      <feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_51_2323" result="shape"/>
+                      </filter>
+                      </defs>
+                      </svg>
+                    </div>
+                  </div>
+                  <div data-layer="Fader Active Wrapper" class="FaderActiveWrapper" style="align-self: stretch; flex: 1 1 0; padding-left: 8px; padding-right: 8px; justify-content: center; align-items: center; gap: 5px; display: inline-flex">
+                    <div data-layer="Fader Active" class="FaderActive" style="flex: 1 1 0; align-self: stretch; max-width: 12px; min-width: 8px; background: #CF4343; box-shadow: 1px 1px 2px rgba(161, 99, 60, 0.90) inset; border-radius: 2px"></div>
+                  </div>
+                </div>
+              </div>
+              <div data-layer="Effect Label" class="EffectLabel" style="align-self: stretch; flex-direction: column; justify-content: flex-start; align-items: center; gap: 4px; display: flex">
+                <div data-layer="Effect" class="Effect" style="color: black; font-size: 13px; font-family: Afacad; font-weight: 500; word-wrap: break-word">Reverb</div>
+                <div data-layer="Parameter" class="Parameter" style="align-self: stretch; text-align: center; color: black; font-size: 10px; font-family: Futura; font-weight: 500; word-wrap: break-word">Decay</div>
+              </div>
+            </div>
+            <div data-layer="Effect Fader" class="EffectFader" style="width: 36px; align-self: stretch; flex-direction: column; justify-content: flex-start; align-items: center; gap: 18px; display: inline-flex">
+              <div data-layer="db indicator" class="DbIndicator" style="flex-direction: column; justify-content: center; align-items: flex-end; gap: 3px; display: flex">
+                <div data-layer="Value" class="Value" style="color: var(--Secondary-Text-Color, #818181); font-size: 16px; font-family: Futura; font-weight: 800; word-wrap: break-word">2.4</div>
+                <div data-layer="Unit" class="Unit" style="color: var(--Secondary-Text-Color, #818181); font-size: 12px; font-family: Inter; font-weight: 400; word-wrap: break-word">%</div>
+              </div>
+              <div data-layer="Fader" data-property-1="Fader" class="Fader" style="align-self: stretch; flex: 1 1 0; padding-top: 13px; padding-bottom: 13px; overflow: hidden; border-radius: 5px; flex-direction: column; justify-content: center; align-items: center; gap: 5px; display: inline-flex">
+                <div data-layer="Fader" class="Fader" style="align-self: stretch; flex: 1 1 0; padding-left: 1px; padding-right: 1px; flex-direction: column; justify-content: space-between; align-items: center; display: flex">
+                  <div data-layer="Fader Top Wrapper" class="FaderTopWrapper" style="align-self: stretch; flex: 1 1 0; padding-left: 8px; padding-right: 8px; justify-content: center; align-items: center; gap: 5px; display: inline-flex">
+                    <div data-layer="Fader Top" class="FaderTop" style="flex: 1 1 0; align-self: stretch; max-width: 12px; min-width: 8px; background: #C7C7C7; box-shadow: 1px 1px 2px rgba(147, 147, 147, 0.90) inset; border-radius: 2px"></div>
+                  </div>
+                  <div data-layer="Fader Handle Wrapper" class="FaderHandleWrapper" style="align-self: stretch; padding-left: 5px; padding-right: 5px; flex-direction: column; justify-content: center; align-items: center; gap: 5px; display: flex">
+                    <div data-svg-wrapper data-layer="Fader Handle" class="FaderHandle">
+                      <svg width="26" height="18" viewBox="0 0 26 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <g filter="url(#filter0_dd_51_2324)">
+                      <rect x="3" y="3" width="20" height="10" rx="2" fill="#DEDEDE"/>
+                      </g>
+                      <defs>
+                      <filter id="filter0_dd_51_2324" x="0" y="0" width="26" height="18" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                      <feMorphology radius="1" operator="dilate" in="SourceAlpha" result="effect1_dropShadow_51_2324"/>
+                      <feOffset dy="1"/>
+                      <feGaussianBlur stdDeviation="1.5"/>
+                      <feColorMatrix type="matrix" values="0 0 0 0 0.235294 0 0 0 0 0.25098 0 0 0 0 0.262745 0 0 0 0.15 0"/>
+                      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_51_2324"/>
+                      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                      <feOffset dy="0.5"/>
+                      <feGaussianBlur stdDeviation="0.5"/>
+                      <feColorMatrix type="matrix" values="0 0 0 0 0.235294 0 0 0 0 0.25098 0 0 0 0 0.262745 0 0 0 0.3 0"/>
+                      <feBlend mode="normal" in2="effect1_dropShadow_51_2324" result="effect2_dropShadow_51_2324"/>
+                      <feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_51_2324" result="shape"/>
+                      </filter>
+                      </defs>
+                      </svg>
+                    </div>
+                  </div>
+                  <div data-layer="Fader Active Wrapper" class="FaderActiveWrapper" style="align-self: stretch; flex: 1 1 0; padding-left: 8px; padding-right: 8px; justify-content: center; align-items: center; gap: 5px; display: inline-flex">
+                    <div data-layer="Fader Active" class="FaderActive" style="flex: 1 1 0; align-self: stretch; max-width: 12px; min-width: 8px; background: #CF4343; box-shadow: 1px 1px 2px rgba(161, 99, 60, 0.90) inset; border-radius: 2px"></div>
+                  </div>
+                </div>
+              </div>
+              <div data-layer="Effect Label" class="EffectLabel" style="align-self: stretch; flex-direction: column; justify-content: flex-start; align-items: center; gap: 4px; display: flex">
+                <div data-layer="Effect" class="Effect" style="color: black; font-size: 13px; font-family: Afacad; font-weight: 500; word-wrap: break-word">Delay</div>
+                <div data-layer="Parameter" class="Parameter" style="align-self: stretch; text-align: center; color: black; font-size: 10px; font-family: Futura; font-weight: 500; word-wrap: break-word">Dry / Wet</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+
+        <div class="available-tracks">
+          <div class="track selected" role="button" aria-label="Guitar 1">
+            <div class="track-name">Guitar 1</div>
+            <div class="track-controls">
+              <div class="mute-button">
+                <svg width="13" height="12" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10.1012 3.44981C11.1693 4.96117 11.1693 7.04009 10.1012 8.55144M11.1993 1.85555C12.9336 4.31071 12.9336 7.69054 11.1993 10.1457M0.5 4.7252V7.27604C0.5 8.55144 1.10008 9.18915 2.30023 9.18915H3.15833C3.38036 9.18915 3.60239 9.2593 3.79441 9.38046L5.54663 10.5475C7.05882 11.555 8.30098 10.8217 8.30098 8.92769V3.07355C8.30098 1.17319 7.05882 0.446209 5.54663 1.45378L3.79441 2.62078C3.60239 2.74194 3.38036 2.81209 3.15833 2.81209H2.30023C1.10008 2.81209 0.5 3.44979 0.5 4.7252Z" stroke="#292D32" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="solo-button">
+                <svg width="13" height="12" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7.81996 3.43753C7.70317 3.35492 7.56841 3.29068 7.41569 3.24477C7.27193 3.1897 7.1192 3.14839 6.9575 3.12086C6.80477 3.09332 6.65203 3.07956 6.49931 3.07956C6.31963 3.07956 6.13096 3.1025 5.93331 3.14839C5.74465 3.18511 5.56945 3.24936 5.40775 3.34116C5.24604 3.42376 5.11576 3.53392 5.01693 3.67159C4.91811 3.80929 4.8687 3.9745 4.8687 4.16726C4.8687 4.39673 4.93608 4.5895 5.07084 4.74555C5.21459 4.90158 5.39876 5.04386 5.62336 5.17236C5.84797 5.29169 6.09502 5.40642 6.36455 5.51658C6.63406 5.61754 6.90359 5.73229 7.17311 5.86078C7.45162 5.98012 7.70317 6.12238 7.92778 6.28761C8.15237 6.45284 8.33205 6.65476 8.46682 6.89342C8.61056 7.12289 8.68243 7.40744 8.68243 7.74707C8.68243 8.07751 8.61505 8.36664 8.4803 8.61448C8.34552 8.86231 8.16585 9.06884 7.94125 9.23407C7.71664 9.39929 7.4651 9.5232 7.18658 9.60581C6.91707 9.68843 6.63856 9.72973 6.35108 9.72973C5.87492 9.72973 5.41224 9.62418 4.96303 9.41306C4.51383 9.20194 4.13202 8.91281 3.81757 8.54564L4.23533 8.09128C4.44196 8.29322 4.65309 8.46303 4.8687 8.60071C5.08431 8.7384 5.31342 8.84395 5.55598 8.91739C5.80754 8.98164 6.07256 9.01377 6.35108 9.01377C6.52177 9.01377 6.70144 8.99082 6.89012 8.94493C7.07878 8.89904 7.25396 8.82559 7.41569 8.72463C7.58638 8.61448 7.72113 8.48139 7.81996 8.32534C7.92778 8.16931 7.98168 7.98113 7.98168 7.76084C7.98168 7.51301 7.90981 7.30189 7.76605 7.12748C7.6313 6.94391 7.45162 6.78786 7.22701 6.65935C7.00242 6.52168 6.75085 6.39775 6.47236 6.28761C6.20283 6.17745 5.92882 6.06272 5.65031 5.94339C5.38079 5.82407 5.13372 5.68638 4.90913 5.53035C4.68454 5.3743 4.50035 5.19071 4.35661 4.97959C4.22185 4.75931 4.15448 4.4977 4.15448 4.19479C4.15448 3.90107 4.21736 3.64865 4.34313 3.43753C4.46891 3.21723 4.63512 3.03365 4.84175 2.88679C5.05736 2.73075 5.29545 2.61602 5.55598 2.54257C5.81652 2.46915 6.08155 2.43243 6.35108 2.43243C6.53075 2.43243 6.71492 2.4462 6.90359 2.47374C7.09225 2.49209 7.2899 2.53798 7.49654 2.61143C7.70317 2.67568 7.9143 2.77664 8.12991 2.91433L7.81996 3.43753Z" fill="#292D32"/>
+                  <path d="M11.6014 6C11.6014 3.04453 9.20547 0.648649 6.25 0.648649C3.29453 0.648649 0.898649 3.04453 0.898649 6C0.898649 8.95547 3.29453 11.3514 6.25 11.3514C9.20547 11.3514 11.6014 8.95547 11.6014 6ZM12.25 6C12.25 9.31371 9.56371 12 6.25 12C2.93629 12 0.25 9.31371 0.25 6C0.25 2.68629 2.93629 0 6.25 0C9.56371 0 12.25 2.68629 12.25 6Z" fill="#292D32"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="track default" role="button" aria-label="Guitar 2">
+            <div class="track-name">Guitar 2</div>
+            <div class="track-controls">
+              <div class="mute-button">
+                <svg width="13" height="12" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10.1012 3.44981C11.1693 4.96117 11.1693 7.04009 10.1012 8.55144M11.1993 1.85555C12.9336 4.31071 12.9336 7.69054 11.1993 10.1457M0.5 4.7252V7.27604C0.5 8.55144 1.10008 9.18915 2.30023 9.18915H3.15833C3.38036 9.18915 3.60239 9.2593 3.79441 9.38046L5.54663 10.5475C7.05882 11.555 8.30098 10.8217 8.30098 8.92769V3.07355C8.30098 1.17319 7.05882 0.446209 5.54663 1.45378L3.79441 2.62078C3.60239 2.74194 3.38036 2.81209 3.15833 2.81209H2.30023C1.10008 2.81209 0.5 3.44979 0.5 4.7252Z" stroke="#292D32" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="solo-button">
+                <svg width="13" height="12" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7.81996 3.43753C7.70317 3.35492 7.56841 3.29068 7.41569 3.24477C7.27193 3.1897 7.1192 3.14839 6.9575 3.12086C6.80477 3.09332 6.65203 3.07956 6.49931 3.07956C6.31963 3.07956 6.13096 3.1025 5.93331 3.14839C5.74465 3.18511 5.56945 3.24936 5.40775 3.34116C5.24604 3.42376 5.11576 3.53392 5.01693 3.67159C4.91811 3.80929 4.8687 3.9745 4.8687 4.16726C4.8687 4.39673 4.93608 4.5895 5.07084 4.74555C5.21459 4.90158 5.39876 5.04386 5.62336 5.17236C5.84797 5.29169 6.09502 5.40642 6.36455 5.51658C6.63406 5.61754 6.90359 5.73229 7.17311 5.86078C7.45162 5.98012 7.70317 6.12238 7.92778 6.28761C8.15237 6.45284 8.33205 6.65476 8.46682 6.89342C8.61056 7.12289 8.68243 7.40744 8.68243 7.74707C8.68243 8.07751 8.61505 8.36664 8.4803 8.61448C8.34552 8.86231 8.16585 9.06884 7.94125 9.23407C7.71664 9.39929 7.4651 9.5232 7.18658 9.60581C6.91707 9.68843 6.63856 9.72973 6.35108 9.72973C5.87492 9.72973 5.41224 9.62418 4.96303 9.41306C4.51383 9.20194 4.13202 8.91281 3.81757 8.54564L4.23533 8.09128C4.44196 8.29322 4.65309 8.46303 4.8687 8.60071C5.08431 8.7384 5.31342 8.84395 5.55598 8.91739C5.80754 8.98164 6.07256 9.01377 6.35108 9.01377C6.52177 9.01377 6.70144 8.99082 6.89012 8.94493C7.07878 8.89904 7.25396 8.82559 7.41569 8.72463C7.58638 8.61448 7.72113 8.48139 7.81996 8.32534C7.92778 8.16931 7.98168 7.98113 7.98168 7.76084C7.98168 7.51301 7.90981 7.30189 7.76605 7.12748C7.6313 6.94391 7.45162 6.78786 7.22701 6.65935C7.00242 6.52168 6.75085 6.39775 6.47236 6.28761C6.20283 6.17745 5.92882 6.06272 5.65031 5.94339C5.38079 5.82407 5.13372 5.68638 4.90913 5.53035C4.68454 5.3743 4.50035 5.19071 4.35661 4.97959C4.22185 4.75931 4.15448 4.4977 4.15448 4.19479C4.15448 3.90107 4.21736 3.64865 4.34313 3.43753C4.46891 3.21723 4.63512 3.03365 4.84175 2.88679C5.05736 2.73075 5.29545 2.61602 5.55598 2.54257C5.81652 2.46915 6.08155 2.43243 6.35108 2.43243C6.53075 2.43243 6.71492 2.4462 6.90359 2.47374C7.09225 2.49209 7.2899 2.53798 7.49654 2.61143C7.70317 2.67568 7.9143 2.77664 8.12991 2.91433L7.81996 3.43753Z" fill="#292D32"/>
+                  <path d="M11.6014 6C11.6014 3.04453 9.20547 0.648649 6.25 0.648649C3.29453 0.648649 0.898649 3.04453 0.898649 6C0.898649 8.95547 3.29453 11.3514 6.25 11.3514C9.20547 11.3514 11.6014 8.95547 11.6014 6ZM12.25 6C12.25 9.31371 9.56371 12 6.25 12C2.93629 12 0.25 9.31371 0.25 6C0.25 2.68629 2.93629 0 6.25 0C9.56371 0 12.25 2.68629 12.25 6Z" fill="#292D32"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="track default" role="button" aria-label="Bass">
+            <div class="track-name">Bass</div>
+            <div class="track-controls">
+              <div class="mute-button">
+                <svg width="13" height="12" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10.1012 3.44981C11.1693 4.96117 11.1693 7.04009 10.1012 8.55144M11.1993 1.85555C12.9336 4.31071 12.9336 7.69054 11.1993 10.1457M0.5 4.7252V7.27604C0.5 8.55144 1.10008 9.18915 2.30023 9.18915H3.15833C3.38036 9.18915 3.60239 9.2593 3.79441 9.38046L5.54663 10.5475C7.05882 11.555 8.30098 10.8217 8.30098 8.92769V3.07355C8.30098 1.17319 7.05882 0.446209 5.54663 1.45378L3.79441 2.62078C3.60239 2.74194 3.38036 2.81209 3.15833 2.81209H2.30023C1.10008 2.81209 0.5 3.44979 0.5 4.7252Z" stroke="#292D32" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="solo-button">
+                <svg width="13" height="12" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7.81996 3.43753C7.70317 3.35492 7.56841 3.29068 7.41569 3.24477C7.27193 3.1897 7.1192 3.14839 6.9575 3.12086C6.80477 3.09332 6.65203 3.07956 6.49931 3.07956C6.31963 3.07956 6.13096 3.1025 5.93331 3.14839C5.74465 3.18511 5.56945 3.24936 5.40775 3.34116C5.24604 3.42376 5.11576 3.53392 5.01693 3.67159C4.91811 3.80929 4.8687 3.9745 4.8687 4.16726C4.8687 4.39673 4.93608 4.5895 5.07084 4.74555C5.21459 4.90158 5.39876 5.04386 5.62336 5.17236C5.84797 5.29169 6.09502 5.40642 6.36455 5.51658C6.63406 5.61754 6.90359 5.73229 7.17311 5.86078C7.45162 5.98012 7.70317 6.12238 7.92778 6.28761C8.15237 6.45284 8.33205 6.65476 8.46682 6.89342C8.61056 7.12289 8.68243 7.40744 8.68243 7.74707C8.68243 8.07751 8.61505 8.36664 8.4803 8.61448C8.34552 8.86231 8.16585 9.06884 7.94125 9.23407C7.71664 9.39929 7.4651 9.5232 7.18658 9.60581C6.91707 9.68843 6.63856 9.72973 6.35108 9.72973C5.87492 9.72973 5.41224 9.62418 4.96303 9.41306C4.51383 9.20194 4.13202 8.91281 3.81757 8.54564L4.23533 8.09128C4.44196 8.29322 4.65309 8.46303 4.8687 8.60071C5.08431 8.7384 5.31342 8.84395 5.55598 8.91739C5.80754 8.98164 6.07256 9.01377 6.35108 9.01377C6.52177 9.01377 6.70144 8.99082 6.89012 8.94493C7.07878 8.89904 7.25396 8.82559 7.41569 8.72463C7.58638 8.61448 7.72113 8.48139 7.81996 8.32534C7.92778 8.16931 7.98168 7.98113 7.98168 7.76084C7.98168 7.51301 7.90981 7.30189 7.76605 7.12748C7.6313 6.94391 7.45162 6.78786 7.22701 6.65935C7.00242 6.52168 6.75085 6.39775 6.47236 6.28761C6.20283 6.17745 5.92882 6.06272 5.65031 5.94339C5.38079 5.82407 5.13372 5.68638 4.90913 5.53035C4.68454 5.3743 4.50035 5.19071 4.35661 4.97959C4.22185 4.75931 4.15448 4.4977 4.15448 4.19479C4.15448 3.90107 4.21736 3.64865 4.34313 3.43753C4.46891 3.21723 4.63512 3.03365 4.84175 2.88679C5.05736 2.73075 5.29545 2.61602 5.55598 2.54257C5.81652 2.46915 6.08155 2.43243 6.35108 2.43243C6.53075 2.43243 6.71492 2.4462 6.90359 2.47374C7.09225 2.49209 7.2899 2.53798 7.49654 2.61143C7.70317 2.67568 7.9143 2.77664 8.12991 2.91433L7.81996 3.43753Z" fill="#292D32"/>
+                  <path d="M11.6014 6C11.6014 3.04453 9.20547 0.648649 6.25 0.648649C3.29453 0.648649 0.898649 3.04453 0.898649 6C0.898649 8.95547 3.29453 11.3514 6.25 11.3514C9.20547 11.3514 11.6014 8.95547 11.6014 6ZM12.25 6C12.25 9.31371 9.56371 12 6.25 12C2.93629 12 0.25 9.31371 0.25 6C0.25 2.68629 2.93629 0 6.25 0C9.56371 0 12.25 2.68629 12.25 6Z" fill="#292D32"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-layer="Monitor Buttons" class="MonitorButtons" style="width: 100%; height: 100%; padding-left: 20px; padding-right: 20px; justify-content: space-between; align-items: center; display: inline-flex">
+    <div data-layer="Button Component" data-property-1="Default" class="ButtonComponent headphones-button" style="width: 63.67px; flex-direction: column; justify-content: flex-start; align-items: center; gap: 16px; display: inline-flex">
+        <div data-svg-wrapper data-layer="Button" class="Button">
+        </div>
+        <div data-layer="Label" class="Label" style="color: #53453B; font-size: 11px; font-family: Alegreya Sans; font-weight: 500; word-wrap: break-word">Headphones</div>
+    </div>
+    <div data-layer="Button Component" data-property-1="Default" class="ButtonComponent backing-button" style="width: 63.67px; flex-direction: column; justify-content: flex-start; align-items: center; gap: 16px; display: inline-flex">
+        <div data-svg-wrapper data-layer="Button" class="Button">
+        </div>
+        <div data-layer="Label" class="Label" style="color: #53453B; font-size: 11px; font-family: Alegreya Sans; font-weight: 500; word-wrap: break-word">Backing</div>
+    </div>
+    <div data-layer="Button Component" data-property-1="Default" class="ButtonComponent" style="width: 63.67px; flex-direction: column; justify-content: flex-start; align-items: center; gap: 16px; display: inline-flex">
+        <div data-svg-wrapper data-layer="Button" class="Button">
+        </div>
+        <div data-layer="Label" class="Label" style="color: #53453B; font-size: 11px; font-family: Alegreya Sans; font-weight: 500; word-wrap: break-word">Effects</div>
+    </div>
+</div>
+      </main>
+      
+      <!-- Extra content to enable scrolling for Safari toolbar minimization -->
+      <div style="height: 100px; width: 100%; opacity: 0.01; pointer-events: none;"></div>
+    </div>
+  </body>
+</html>
