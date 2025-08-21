@@ -41,6 +41,11 @@ DEFAULT_CONFIG = {
         "count": 3,
         "names": ["Track 1", "Track 2", "Track 3"]
     },
+    "cc": {
+        "headphones": 1,
+        "backing": 2,
+        "tracks": [3, 4, 5]
+    },
     "users": {
         "port_5001": "User 1",
         "port_5002": "User 2"
@@ -57,8 +62,19 @@ def load_config():
                 # Ensure all required keys exist
                 if 'tracks' not in config:
                     config['tracks'] = DEFAULT_CONFIG['tracks']
+                if 'cc' not in config:
+                    config['cc'] = DEFAULT_CONFIG['cc']
                 if 'users' not in config:
                     config['users'] = DEFAULT_CONFIG['users']
+
+                # Ensure track CC list matches track count
+                track_count = config['tracks'].get('count', DEFAULT_CONFIG['tracks']['count'])
+                cc_tracks = config['cc'].get('tracks', [])
+                if len(cc_tracks) < track_count:
+                    start_cc = 3
+                    cc_tracks = list(cc_tracks) + list(range(start_cc + len(cc_tracks), start_cc + track_count))
+                config['cc']['tracks'] = cc_tracks[:track_count]
+
                 return config
         else:
             # Create default config file
@@ -192,6 +208,15 @@ def get_dashboard_html():
                 font-size: 14px;
             }
 
+            .track-input input[type="text"] {
+                flex: 1;
+                width: auto;
+            }
+
+            .track-input input[type="number"] {
+                width: 60px;
+            }
+
             .user-inputs {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
@@ -307,6 +332,11 @@ def get_dashboard_html():
                 .track-input label {
                     min-width: auto;
                 }
+
+                .track-input input[type="text"],
+                .track-input input[type="number"] {
+                    width: 100%;
+                }
             }
         </style>
     </head>
@@ -332,6 +362,14 @@ def get_dashboard_html():
                 <div class="form-group">
                     <label for="trackCount">Number of Tracks:</label>
                     <input type="number" id="trackCount" min="1" max="8" value="3">
+                </div>
+                <div class="form-group">
+                    <label for="headphonesCc">Headphones CC:</label>
+                    <input type="number" id="headphonesCc" min="0" max="127" value="1">
+                </div>
+                <div class="form-group">
+                    <label for="backingCc">Backing CC:</label>
+                    <input type="number" id="backingCc" min="0" max="127" value="2">
                 </div>
                 <div class="track-inputs" id="trackInputs">
                     <!-- Track name inputs will be generated here -->
@@ -381,7 +419,11 @@ def get_dashboard_html():
             function updateUI() {
                 // Update track count
                 document.getElementById('trackCount').value = currentConfig.tracks.count;
-                
+
+                // Update CC values for headphones and backing
+                document.getElementById('headphonesCc').value = currentConfig.cc.headphones;
+                document.getElementById('backingCc').value = currentConfig.cc.backing;
+
                 // Update user names
                 document.getElementById('user5001').value = currentConfig.users.port_5001;
                 document.getElementById('user5002').value = currentConfig.users.port_5002;
@@ -398,18 +440,28 @@ def get_dashboard_html():
                 for (let i = 1; i <= count; i++) {
                     const trackDiv = document.createElement('div');
                     trackDiv.className = 'track-input';
-                    
+
                     const label = document.createElement('label');
                     label.textContent = `Track ${i}:`;
-                    
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.id = `track${i}`;
-                    input.placeholder = `Enter name for track ${i}`;
-                    input.value = currentConfig.tracks.names[i-1] || `Track ${i}`;
-                    
+
+                    const nameInput = document.createElement('input');
+                    nameInput.type = 'text';
+                    nameInput.id = `track${i}`;
+                    nameInput.placeholder = `Enter name for track ${i}`;
+                    nameInput.value = currentConfig.tracks.names[i-1] || `Track ${i}`;
+
+                    const ccInput = document.createElement('input');
+                    ccInput.type = 'number';
+                    ccInput.id = `cc${i}`;
+                    ccInput.min = 0;
+                    ccInput.max = 127;
+                    ccInput.placeholder = 'CC';
+                    const defaultCc = (currentConfig.cc && currentConfig.cc.tracks && currentConfig.cc.tracks[i-1]) || (i + 2);
+                    ccInput.value = defaultCc;
+
                     trackDiv.appendChild(label);
-                    trackDiv.appendChild(input);
+                    trackDiv.appendChild(nameInput);
+                    trackDiv.appendChild(ccInput);
                     container.appendChild(trackDiv);
                 }
             }
@@ -423,6 +475,9 @@ def get_dashboard_html():
                 configDiv.innerHTML = `
                     <div class="config-item"><strong>Track Count:</strong> ${currentConfig.tracks.count}</div>
                     <div class="config-item"><strong>Track Names:</strong> ${currentConfig.tracks.names.join(', ')}</div>
+                    <div class="config-item"><strong>Headphones CC:</strong> ${currentConfig.cc.headphones}</div>
+                    <div class="config-item"><strong>Backing CC:</strong> ${currentConfig.cc.backing}</div>
+                    <div class="config-item"><strong>Track CCs:</strong> ${currentConfig.cc.tracks.join(', ')}</div>
                     <div class="config-item"><strong>Port 5001 User:</strong> ${currentConfig.users.port_5001}</div>
                     <div class="config-item"><strong>Port 5002 User:</strong> ${currentConfig.users.port_5002}</div>
                     <div class="config-item"><strong>Last Updated:</strong> ${lastUpdated}</div>
@@ -436,16 +491,24 @@ def get_dashboard_html():
                 try {
                     const trackCount = parseInt(document.getElementById('trackCount').value);
                     const trackNames = [];
-                    
+                    const trackCcs = [];
+
                     for (let i = 1; i <= trackCount; i++) {
                         const trackName = document.getElementById(`track${i}`).value || `Track ${i}`;
                         trackNames.push(trackName);
+                        const ccValue = parseInt(document.getElementById(`cc${i}`).value) || (i + 2);
+                        trackCcs.push(ccValue);
                     }
 
                     const config = {
                         tracks: {
                             count: trackCount,
                             names: trackNames
+                        },
+                        cc: {
+                            headphones: parseInt(document.getElementById('headphonesCc').value) || 1,
+                            backing: parseInt(document.getElementById('backingCc').value) || 2,
+                            tracks: trackCcs
                         },
                         users: {
                             port_5001: document.getElementById('user5001').value || 'User 1',
@@ -514,7 +577,7 @@ def save_config_endpoint():
             }), 400
         
         # Validate data structure
-        if 'tracks' not in data or 'users' not in data:
+        if 'tracks' not in data or 'users' not in data or 'cc' not in data:
             return jsonify({
                 "status": "error",
                 "message": "Invalid data structure"
@@ -539,13 +602,29 @@ def save_config_endpoint():
                 "status": "error",
                 "message": "Track names must be a list matching track count"
             }), 400
-        
+        # Validate CC values
+        cc = data['cc']
+        if ('headphones' not in cc or 'backing' not in cc or
+                'tracks' not in cc or not isinstance(cc['tracks'], list) or
+                len(cc['tracks']) != tracks['count']):
+            return jsonify({
+                "status": "error",
+                "message": "Invalid CC data",
+            }), 400
+
+        cc_values = [cc['headphones'], cc['backing'], *cc['tracks']]
+        if any(not isinstance(v, int) or v < 0 or v > 127 for v in cc_values):
+            return jsonify({
+                "status": "error",
+                "message": "CC values must be integers between 0 and 127",
+            }), 400
+
         # Validate users
         users = data['users']
         if 'port_5001' not in users or 'port_5002' not in users:
             return jsonify({
                 "status": "error",
-                "message": "Invalid users data"
+                "message": "Invalid users data",
             }), 400
         
         # Save configuration
