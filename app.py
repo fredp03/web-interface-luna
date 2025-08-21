@@ -46,10 +46,9 @@ def load_config():
     try:
         if os.path.exists(CONFIG_FILE):
             with open(CONFIG_FILE, 'r') as f:
-                return json.load(f)
+                config = json.load(f)
         else:
-            # Default configuration if file doesn't exist
-            return {
+            config = {
                 "tracks": {
                     "count": 3,
                     "names": ["Track 1", "Track 2", "Track 3"]
@@ -59,9 +58,26 @@ def load_config():
                     "port_5002": "User 2"
                 }
             }
+
+        if 'cc' not in config:
+            config['cc'] = {
+                'headphones': 1,
+                'backing': 2,
+                'tracks': [i + 3 for i in range(config['tracks']['count'])]
+            }
+        else:
+            config['cc'].setdefault('headphones', 1)
+            config['cc'].setdefault('backing', 2)
+            tracks_cc = config['cc'].get('tracks', [])
+            required = config['tracks']['count']
+            if len(tracks_cc) < required:
+                start = 3 + len(tracks_cc)
+                tracks_cc.extend(list(range(start, start + (required - len(tracks_cc)))))
+            config['cc']['tracks'] = tracks_cc
+
+        return config
     except Exception as e:
         logger.error(f"Error loading config: {e}")
-        # Return default config on error
         return {
             "tracks": {
                 "count": 3,
@@ -70,6 +86,11 @@ def load_config():
             "users": {
                 "port_5001": "User 1",
                 "port_5002": "User 2"
+            },
+            "cc": {
+                "headphones": 1,
+                "backing": 2,
+                "tracks": [3, 4, 5]
             }
         }
 
@@ -383,6 +404,32 @@ def control_fader_cc(fader_number, value):
         "status": "error", 
         "message": "Failed to send MIDI message"
     }), 500
+
+@app.route('/api/cc/<int:cc_number>/<int:value>')
+def control_cc(cc_number, value):
+    """Directly send a MIDI CC message."""
+    if not (0 <= cc_number <= 127) or not (0 <= value <= 127):
+        return jsonify({
+            "status": "error",
+            "message": "CC number and value must be between 0 and 127",
+        }), 400
+    success = send_cc_message(cc_number, value)
+    if success:
+        return jsonify({"status": "ok", "cc": cc_number, "value": value})
+    return jsonify({"status": "error", "message": "Failed to send MIDI message"}), 500
+
+@cc_app.route('/api/cc/<int:cc_number>/<int:value>')
+def control_cc_secondary(cc_number, value):
+    """Directly send a MIDI CC message on the secondary server."""
+    if not (0 <= cc_number <= 127) or not (0 <= value <= 127):
+        return jsonify({
+            "status": "error",
+            "message": "CC number and value must be between 0 and 127",
+        }), 400
+    success = send_cc_message(cc_number, value)
+    if success:
+        return jsonify({"status": "ok", "cc": cc_number, "value": value})
+    return jsonify({"status": "error", "message": "Failed to send MIDI message"}), 500
 
 
 @app.route('/api/status')

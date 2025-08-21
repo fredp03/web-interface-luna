@@ -350,7 +350,8 @@
       */
 
       // Track selection functionality
-      window.addEventListener('DOMContentLoaded', function() {
+      window.addEventListener('DOMContentLoaded', async function() {
+        await loadCcConfig();
         const tracks = document.querySelectorAll('.track');
         
         tracks.forEach(track => {
@@ -410,11 +411,7 @@
         let initialMouseY = 0;
         
         // Track volume state
-        let trackVolumes = {
-          'Guitar 1': 0,
-          'Guitar 2': 0,
-          'Bass': 0
-        };
+        let trackVolumes = {};
         
         // Monitor volume state
         let monitorVolumes = {
@@ -424,7 +421,7 @@
         
         // Current active fader type and name
         let activeFaderType = 'track'; // 'track' or 'monitor'
-        let activeFaderName = 'Guitar 1'; // tracks start with Guitar 1 selected
+        let activeFaderName = '';
         
         let effectValues = {
           reverbDryWet: 50,
@@ -432,15 +429,8 @@
           delayDryWet: 50
         };
 
-        const trackToFader = {
-            'Guitar 1': 1,
-            'Guitar 2': 2,
-            'Bass': 3
-        };
-        const monitorToFader = {
-            'Backing': 4,
-            'Headphones': 5
-        };
+        let trackToCC = {};
+        let monitorToCC = {};
         const UPDATE_THROTTLE_MS = 50;
         let lastUpdateTime = 0;
 
@@ -449,15 +439,38 @@
             return Math.round(((clampedDb + 60) / 66) * 127);
         }
 
+        async function loadCcConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const data = await response.json();
+                trackToCC = {};
+                trackVolumes = {};
+                if (data.tracks && data.tracks.names) {
+                    data.tracks.names.forEach((name, index) => {
+                        const ccVal = data.cc && data.cc.tracks ? data.cc.tracks[index] : index + 3;
+                        trackToCC[name] = ccVal;
+                        trackVolumes[name] = 0;
+                    });
+                    activeFaderName = data.tracks.names[0] || activeFaderName;
+                }
+                monitorToCC = {
+                    'Headphones': data.cc ? data.cc.headphones || 1 : 1,
+                    'Backing': data.cc ? data.cc.backing || 2 : 2
+                };
+            } catch (err) {
+                console.error('Error loading CC config:', err);
+            }
+        }
+
         async function sendMidiForCurrent(dbValue) {
             const midiValue = dbToMidi(dbValue);
-            let fader = null;
+            let cc = null;
             if (activeFaderType === 'track') {
-                fader = trackToFader[activeFaderName];
+                cc = trackToCC[activeFaderName];
             } else if (activeFaderType === 'monitor') {
-                fader = monitorToFader[activeFaderName];
+                cc = monitorToCC[activeFaderName];
             }
-            if (!fader) return;
+            if (cc === undefined) return;
 
             const now = Date.now();
             if (now - lastUpdateTime < UPDATE_THROTTLE_MS) {
@@ -466,7 +479,7 @@
             lastUpdateTime = now;
 
             try {
-                await fetch(`/api/fader/${fader}/${midiValue}`);
+                await fetch(`/api/cc/${cc}/${midiValue}`);
             } catch (e) {
                 console.error('MIDI send error:', e);
             }
