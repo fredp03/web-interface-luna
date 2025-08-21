@@ -10,6 +10,7 @@ License: MIT
 """
 
 import os
+import json
 import logging
 from flask import Flask, jsonify, render_template_string
 import mido
@@ -22,6 +23,9 @@ HOST = '0.0.0.0'  # Listen on all network interfaces for mobile access
 PORT = int(os.getenv('PORT', 5001))  # Main server port
 SECOND_PORT = int(os.getenv('PORT2', 5002))  # Secondary server port
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+
+# Configuration file path (shared with dashboard)
+CONFIG_FILE = 'config.json'
 
 # Set up logging
 logging.basicConfig(
@@ -36,6 +40,38 @@ cc_app = Flask(__name__ + '_cc')
 
 # Global MIDI output port
 midi_out = None
+
+def load_config():
+    """Load configuration from JSON file created by dashboard."""
+    try:
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r') as f:
+                return json.load(f)
+        else:
+            # Default configuration if file doesn't exist
+            return {
+                "tracks": {
+                    "count": 3,
+                    "names": ["Track 1", "Track 2", "Track 3"]
+                },
+                "users": {
+                    "port_5001": "User 1",
+                    "port_5002": "User 2"
+                }
+            }
+    except Exception as e:
+        logger.error(f"Error loading config: {e}")
+        # Return default config on error
+        return {
+            "tracks": {
+                "count": 3,
+                "names": ["Track 1", "Track 2", "Track 3"]
+            },
+            "users": {
+                "port_5001": "User 1",
+                "port_5002": "User 2"
+            }
+        }
 
 
 def initialize_midi():
@@ -122,68 +158,129 @@ def send_cc_message(control_number, value, channel=0):
         return False
 
 
-def load_index_html():
-    """Load the main web interface HTML."""
+def load_index_html(port=None):
+    """Load the main web interface HTML with dynamic configuration."""
+    config = load_config()
+    track_count = config['tracks']['count']
+    track_names = config['tracks']['names']
+    
+    # Determine user name based on port
+    if port == PORT:
+        user_name = config['users']['port_5001']
+    elif port == SECOND_PORT:
+        user_name = config['users']['port_5002']
+    else:
+        # Fallback - try to determine from the request
+        from flask import request
+        if request and hasattr(request, 'url'):
+            if f':{PORT}' in request.url:
+                user_name = config['users']['port_5001']
+            elif f':{SECOND_PORT}' in request.url:
+                user_name = config['users']['port_5002']
+            else:
+                user_name = "User"
+        else:
+            user_name = "User"
+    
     try:
         with open('static/index.html', 'r') as f:
-            return f.read()
+            html_content = f.read()
+            
+            # Replace the user name in the header
+            html_content = html_content.replace('<h1>User</h1>', f'<h1>{user_name}</h1>')
+            
+            # Generate dynamic tracks HTML based on configuration
+            tracks_html = ""
+            for i in range(track_count):
+                track_name = track_names[i] if i < len(track_names) else f"Track {i+1}"
+                track_class = "selected" if i == 0 else "default"
+                tracks_html += f'''          <div class="track {track_class}" role="button" aria-label="{track_name}">
+            <div class="track-name">{track_name}</div>
+            <div class="track-controls">
+              <div class="mute-button">
+                <svg width="13" height="12" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10.1012 3.44981C11.1693 4.96117 11.1693 7.04009 10.1012 8.55144M11.1993 1.85555C12.9336 4.31071 12.9336 7.69054 11.1993 10.1457M0.5 4.7252V7.27604C0.5 8.55144 1.10008 9.18915 2.30023 9.18915H3.15833C3.38036 9.18915 3.60239 9.2593 3.79441 9.38046L5.54663 10.5475C7.05882 11.555 8.30098 10.8217 8.30098 8.92769V3.07355C8.30098 1.17319 7.05882 0.446209 5.54663 1.45378L3.79441 2.62078C3.60239 2.74194 3.38036 2.81209 3.15833 2.81209H2.30023C1.10008 2.81209 0.5 3.44979 0.5 4.7252Z" stroke="#292D32" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="solo-button">
+                <svg width="13" height="12" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7.81996 3.43753C7.70317 3.35492 7.56841 3.29068 7.41569 3.24477C7.27193 3.1897 7.1192 3.14839 6.9575 3.12086C6.80477 3.09332 6.65203 3.07956 6.49931 3.07956C6.31963 3.07956 6.13096 3.1025 5.93331 3.14839C5.74465 3.18511 5.56945 3.24936 5.40775 3.34116C5.24604 3.42376 5.11576 3.53392 5.01693 3.67159C4.91811 3.80929 4.8687 3.9745 4.8687 4.16726C4.8687 4.39673 4.93608 4.5895 5.07084 4.74555C5.21459 4.90158 5.39876 5.04386 5.62336 5.17236C5.84797 5.29169 6.09502 5.40642 6.36455 5.51658C6.63406 5.61754 6.90359 5.73229 7.17311 5.86078C7.45162 5.98012 7.70317 6.12238 7.92778 6.28761C8.15237 6.45284 8.33205 6.65476 8.46682 6.89342C8.61056 7.12289 8.68243 7.40744 8.68243 7.74707C8.68243 8.07751 8.61505 8.36664 8.4803 8.61448C8.34552 8.86231 8.16585 9.06884 7.94125 9.23407C7.71664 9.39929 7.4651 9.5232 7.18658 9.60581C6.91707 9.68843 6.63856 9.72973 6.35108 9.72973C5.87492 9.72973 5.41224 9.62418 4.96303 9.41306C4.51383 9.20194 4.13202 8.91281 3.81757 8.54564L4.23533 8.09128C4.44196 8.29322 4.65309 8.46303 4.8687 8.60071C5.08431 8.7384 5.31342 8.84395 5.55598 8.91739C5.80754 8.98164 6.07256 9.01377 6.35108 9.01377C6.52177 9.01377 6.70144 8.99082 6.89012 8.94493C7.07878 8.89904 7.25396 8.82559 7.41569 8.72463C7.58638 8.61448 7.72113 8.48139 7.81996 8.32534C7.92778 8.16931 7.98168 7.98113 7.98168 7.76084C7.98168 7.51301 7.90981 7.30189 7.76605 7.12748C7.6313 6.94391 7.45162 6.78786 7.22701 6.65935C7.00242 6.52168 6.75085 6.39775 6.47236 6.28761C6.20283 6.17745 5.92882 6.06272 5.65031 5.94339C5.38079 5.82407 5.13372 5.68638 4.90913 5.53035C4.68454 5.3743 4.50035 5.19071 4.35661 4.97959C4.22185 4.75931 4.15448 4.4977 4.15448 4.19479C4.15448 3.90107 4.21736 3.64865 4.34313 3.43753C4.46891 3.21723 4.63512 3.03365 4.84175 2.88679C5.05736 2.73075 5.29545 2.61602 5.55598 2.54257C5.81652 2.46915 6.08155 2.43243 6.35108 2.43243C6.53075 2.43243 6.71492 2.4462 6.90359 2.47374C7.09225 2.49209 7.2899 2.53798 7.49654 2.61143C7.70317 2.67568 7.9143 2.77664 8.12991 2.91433L7.81996 3.43753Z" fill="#292D32"/>
+                  <path d="M11.6014 6C11.6014 3.04453 9.20547 0.648649 6.25 0.648649C3.29453 0.648649 0.898649 3.04453 0.898649 6C0.898649 8.95547 3.29453 11.3514 6.25 11.3514C9.20547 11.3514 11.6014 8.95547 11.6014 6ZM12.25 6C12.25 9.31371 9.56371 12 6.25 12C2.93629 12 0.25 9.31371 0.25 6C0.25 2.68629 2.93629 0 6.25 0C9.56371 0 12.25 2.68629 12.25 6Z" fill="#292D32"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+'''
+            
+            # Replace the hardcoded tracks section with dynamic tracks
+            import re
+            pattern = r'<div class="available-tracks">.*?</div>\s*<div data-layer="Monitor Buttons"'
+            replacement = f'<div class="available-tracks">\n{tracks_html}        </div>\n        <div data-layer="Monitor Buttons"'
+            html_content = re.sub(pattern, replacement, html_content, flags=re.DOTALL)
+            
+            return html_content
     except FileNotFoundError:
+        # Generate dynamic HTML based on configuration
+        fader_groups_html = ""
+        fader_scripts = ""
+        
+        for i in range(1, track_count + 1):
+            track_name = track_names[i-1] if i-1 < len(track_names) else f"Track {i}"
+            fader_groups_html += f"""
+                <div class="fader-group">
+                    <div class="fader-label">{track_name}</div>
+                    <input type="range" class="fader-slider" id="fader{i}" min="0" max="127" value="64" oninput="updateFader({i}, this.value)">
+                    <div>Value: <span class="fader-value" id="value{i}">64</span></div>
+                </div>"""
+        
         # Fallback to embedded HTML if static file not found
-        return render_template_string("""
+        return render_template_string(f"""
         <!DOCTYPE html>
         <html>
         <head>
             <title>LUNA MCU Controller</title>
             <style>
-                body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
-                .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-                h1 { color: #333; text-align: center; margin-bottom: 30px; }
-                .fader-group { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 4px; }
-                .fader-label { font-weight: bold; margin-bottom: 10px; color: #555; }
-                .fader-slider { width: 100%; margin: 10px 0; }
-                .fader-value { font-family: monospace; color: #007cba; font-weight: bold; }
-                .status { text-align: center; margin-top: 20px; padding: 10px; background: #e8f5e8; border-radius: 4px; }
+                body {{ font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }}
+                .container {{ max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+                h1 {{ color: #333; text-align: center; margin-bottom: 30px; }}
+                .fader-group {{ margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 4px; }}
+                .fader-label {{ font-weight: bold; margin-bottom: 10px; color: #555; }}
+                .fader-slider {{ width: 100%; margin: 10px 0; }}
+                .fader-value {{ font-family: monospace; color: #007cba; font-weight: bold; }}
+                .status {{ text-align: center; margin-top: 20px; padding: 10px; background: #e8f5e8; border-radius: 4px; }}
+                .dashboard-link {{ text-align: center; margin-bottom: 20px; }}
+                .dashboard-link a {{ color: #007cba; text-decoration: none; font-weight: bold; }}
+                .dashboard-link a:hover {{ text-decoration: underline; }}
             </style>
         </head>
         <body>
             <div class="container">
                 <h1>LUNA MCU Virtual Controller</h1>
-                <div class="fader-group">
-                    <div class="fader-label">Fader 1</div>
-                    <input type="range" class="fader-slider" id="fader1" min="0" max="127" value="64" oninput="updateFader(1, this.value)">
-                    <div>Value: <span class="fader-value" id="value1">64</span></div>
+                <div class="dashboard-link">
+                    <a href="http://localhost:5003" target="_blank">🎛️ Open Dashboard (Port 5003)</a>
                 </div>
-                <div class="fader-group">
-                    <div class="fader-label">Fader 2</div>
-                    <input type="range" class="fader-slider" id="fader2" min="0" max="127" value="64" oninput="updateFader(2, this.value)">
-                    <div>Value: <span class="fader-value" id="value2">64</span></div>
-                </div>
-                <div class="fader-group">
-                    <div class="fader-label">Fader 3</div>
-                    <input type="range" class="fader-slider" id="fader3" min="0" max="127" value="64" oninput="updateFader(3, this.value)">
-                    <div>Value: <span class="fader-value" id="value3">64</span></div>
-                </div>
+                {fader_groups_html}
                 <div class="status" id="status">Ready - Move sliders to control LUNA faders</div>
             </div>
             <script>
-                async function updateFader(faderNum, value) {
+                async function updateFader(faderNum, value) {{
                     document.getElementById('value' + faderNum).textContent = value;
                     document.getElementById('status').textContent = 'Sending...';
                     
-                    try {
+                    try {{
                         const response = await fetch('/api/fader/' + faderNum + '/' + value);
                         const data = await response.json();
                         
-                        if (data.status === 'ok') {
+                        if (data.status === 'ok') {{
                             document.getElementById('status').textContent = 
                                 'Sent: Fader ' + data.fader + ' = ' + data.value;
-                        } else {
+                        }} else {{
                             document.getElementById('status').textContent = 'Error: ' + JSON.stringify(data);
-                        }
-                    } catch (error) {
+                        }}
+                    }} catch (error) {{
                         document.getElementById('status').textContent = 'Network error: ' + error.message;
-                    }
-                }
+                    }}
+                }}
             </script>
         </body>
         </html>
@@ -193,13 +290,13 @@ def load_index_html():
 @app.route('/')
 def index():
     """Serve the main web interface for the primary server."""
-    return load_index_html()
+    return load_index_html(PORT)
 
 
 @cc_app.route('/')
 def cc_index():
     """Serve the web interface for the secondary server."""
-    return load_index_html()
+    return load_index_html(SECOND_PORT)
 
 
 @app.route('/api/fader/<int:fader_number>/<int:value>')
@@ -208,17 +305,20 @@ def control_fader(fader_number, value):
     HTTP endpoint to control faders and other parameters
     
     Args:
-        fader_number (int): Fader number (1-5)
+        fader_number (int): Fader number (1-8, dynamic based on config)
         value (int): Fader value (0-127)
     
     Returns:
         JSON response with status
     """
-    # Validate inputs
-    if fader_number not in [1, 2, 3, 4, 5]:
+    config = load_config()
+    max_tracks = config['tracks']['count']
+    
+    # Validate inputs based on current configuration
+    if fader_number not in range(1, max_tracks + 1):
         return jsonify({
             "status": "error",
-            "message": "Invalid fader number. Must be 1-5."
+            "message": f"Invalid fader number. Must be 1-{max_tracks} (current config)."
         }), 400
     
     if not (0 <= value <= 127):
@@ -230,10 +330,9 @@ def control_fader(fader_number, value):
     # Send MIDI message based on fader number
     if fader_number in [1, 2, 3]:
         success = send_mcu_fader_message(fader_number, value)
-    elif fader_number == 4:
-        success = send_cc_message(4, value)
-    elif fader_number == 5:
-        success = send_cc_message(5, value)
+    elif fader_number <= max_tracks:
+        # For additional tracks beyond 3, use CC messages
+        success = send_cc_message(fader_number + 3, value)
     else:
         success = False
     
@@ -241,7 +340,8 @@ def control_fader(fader_number, value):
         return jsonify({
             "status": "ok",
             "fader": fader_number,
-            "value": value
+            "value": value,
+            "track_name": config['tracks']['names'][fader_number-1] if fader_number-1 < len(config['tracks']['names']) else f"Track {fader_number}"
         })
     else:
         return jsonify({
@@ -252,11 +352,14 @@ def control_fader(fader_number, value):
 
 @cc_app.route('/api/fader/<int:fader_number>/<int:value>')
 def control_fader_cc(fader_number, value):
-    """Control faders using MIDI CCs 6-10 on the secondary server."""
-    if fader_number not in [1, 2, 3, 4, 5]:
+    """Control faders using MIDI CCs on the secondary server."""
+    config = load_config()
+    max_tracks = config['tracks']['count']
+    
+    if fader_number not in range(1, max_tracks + 1):
         return jsonify({
             "status": "error",
-            "message": "Invalid fader number. Must be 1-5."
+            "message": f"Invalid fader number. Must be 1-{max_tracks} (current config)."
         }), 400
 
     if not (0 <= value <= 127):
@@ -265,28 +368,59 @@ def control_fader_cc(fader_number, value):
             "message": "Invalid value. Must be between 0 and 127."
         }), 400
 
-    cc_number = fader_number + 5  # Map 1-5 -> 6-10
+    cc_number = fader_number + 5  # Map 1-n -> 6-(n+5)
     success = send_cc_message(cc_number, value)
 
     if success:
-        return jsonify({"status": "ok", "fader": fader_number, "value": value})
-    return jsonify({"status": "error", "message": "Failed to send MIDI message"}), 500
+        return jsonify({
+            "status": "ok", 
+            "fader": fader_number, 
+            "value": value,
+            "cc_number": cc_number,
+            "track_name": config['tracks']['names'][fader_number-1] if fader_number-1 < len(config['tracks']['names']) else f"Track {fader_number}"
+        })
+    return jsonify({
+        "status": "error", 
+        "message": "Failed to send MIDI message"
+    }), 500
 
 
 @app.route('/api/status')
 def get_status():
-    """Get MIDI connection status"""
+    """Get MIDI connection status and current configuration"""
+    config = load_config()
     return jsonify({
         "midi_port": MIDI_PORT_NAME,
         "connected": midi_out is not None,
-        "available_ports": mido.get_output_names()
+        "available_ports": mido.get_output_names(),
+        "user_name": config['users']['port_5001'],
+        "track_count": config['tracks']['count'],
+        "track_names": config['tracks']['names']
     })
 
 
 @cc_app.route('/api/status')
 def get_status_cc():
-    """Get MIDI connection status for the secondary server."""
-    return get_status()
+    """Get MIDI connection status and current configuration for the secondary server."""
+    config = load_config()
+    return jsonify({
+        "midi_port": MIDI_PORT_NAME,
+        "connected": midi_out is not None,
+        "available_ports": mido.get_output_names(),
+        "user_name": config['users']['port_5002'],
+        "track_count": config['tracks']['count'],
+        "track_names": config['tracks']['names']
+    })
+
+@app.route('/api/config')
+def get_config():
+    """Get current configuration for the main server."""
+    return jsonify(load_config())
+
+@cc_app.route('/api/config')
+def get_config_cc():
+    """Get current configuration for the secondary server."""
+    return jsonify(load_config())
 
 
 def cleanup():
