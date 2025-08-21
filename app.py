@@ -46,7 +46,25 @@ def load_config():
     try:
         if os.path.exists(CONFIG_FILE):
             with open(CONFIG_FILE, 'r') as f:
-                return json.load(f)
+                config = json.load(f)
+                # Ensure CC configuration exists and matches track count
+                if 'cc' not in config:
+                    track_count = config['tracks']['count']
+                    config['cc'] = {
+                        "headphones": 1,
+                        "backing": 2,
+                        "tracks": [i + 3 for i in range(track_count)]
+                    }
+                else:
+                    track_count = config['tracks']['count']
+                    cc = config['cc']
+                    cc.setdefault('headphones', 1)
+                    cc.setdefault('backing', 2)
+                    tracks_cc = cc.get('tracks', [])
+                    if len(tracks_cc) < track_count:
+                        tracks_cc.extend([i + 3 for i in range(len(tracks_cc), track_count)])
+                    cc['tracks'] = tracks_cc[:track_count]
+                return config
         else:
             # Default configuration if file doesn't exist
             return {
@@ -57,6 +75,11 @@ def load_config():
                 "users": {
                     "port_5001": "User 1",
                     "port_5002": "User 2"
+                },
+                "cc": {
+                    "headphones": 1,
+                    "backing": 2,
+                    "tracks": [3, 4, 5]
                 }
             }
     except Exception as e:
@@ -70,6 +93,11 @@ def load_config():
             "users": {
                 "port_5001": "User 1",
                 "port_5002": "User 2"
+            },
+            "cc": {
+                "headphones": 1,
+                "backing": 2,
+                "tracks": [3, 4, 5]
             }
         }
 
@@ -313,12 +341,13 @@ def control_fader(fader_number, value):
     """
     config = load_config()
     max_tracks = config['tracks']['count']
+    max_faders = max_tracks + 2  # include headphones and backing
     
     # Validate inputs based on current configuration
-    if fader_number not in range(1, max_tracks + 1):
+    if fader_number not in range(1, max_faders + 1):
         return jsonify({
             "status": "error",
-            "message": f"Invalid fader number. Must be 1-{max_tracks} (current config)."
+            "message": f"Invalid fader number. Must be 1-{max_faders} (current config).",
         }), 400
     
     if not (0 <= value <= 127):
@@ -328,25 +357,38 @@ def control_fader(fader_number, value):
         }), 400
     
     # Send MIDI message based on fader number
+    cc_config = config.get('cc', {})
     if fader_number in [1, 2, 3]:
         success = send_mcu_fader_message(fader_number, value)
+        track_name = config['tracks']['names'][fader_number-1] if fader_number-1 < len(config['tracks']['names']) else f"Track {fader_number}"
     elif fader_number <= max_tracks:
-        # For additional tracks beyond 3, use CC messages
-        success = send_cc_message(fader_number + 3, value)
+        track_ccs = cc_config.get('tracks', [])
+        cc_number = track_ccs[fader_number-1] if fader_number-1 < len(track_ccs) else fader_number + 2
+        success = send_cc_message(cc_number, value)
+        track_name = config['tracks']['names'][fader_number-1] if fader_number-1 < len(config['tracks']['names']) else f"Track {fader_number}"
+    elif fader_number == max_tracks + 1:
+        cc_number = cc_config.get('headphones', 1)
+        success = send_cc_message(cc_number, value)
+        track_name = 'Headphones'
+    elif fader_number == max_tracks + 2:
+        cc_number = cc_config.get('backing', 2)
+        success = send_cc_message(cc_number, value)
+        track_name = 'Backing'
     else:
         success = False
-    
+        track_name = f'Fader {fader_number}'
+
     if success:
         return jsonify({
-            "status": "ok",
-            "fader": fader_number,
-            "value": value,
-            "track_name": config['tracks']['names'][fader_number-1] if fader_number-1 < len(config['tracks']['names']) else f"Track {fader_number}"
+            'status': 'ok',
+            'fader': fader_number,
+            'value': value,
+            'track_name': track_name
         })
     else:
         return jsonify({
-            "status": "error",
-            "message": "Failed to send MIDI message"
+            'status': 'error',
+            'message': 'Failed to send MIDI message'
         }), 500
 
 
@@ -355,33 +397,50 @@ def control_fader_cc(fader_number, value):
     """Control faders using MIDI CCs on the secondary server."""
     config = load_config()
     max_tracks = config['tracks']['count']
-    
-    if fader_number not in range(1, max_tracks + 1):
+    max_faders = max_tracks + 2
+
+    if fader_number not in range(1, max_faders + 1):
         return jsonify({
             "status": "error",
-            "message": f"Invalid fader number. Must be 1-{max_tracks} (current config)."
+            "message": f"Invalid fader number. Must be 1-{max_faders} (current config).",
         }), 400
 
     if not (0 <= value <= 127):
         return jsonify({
             "status": "error",
-            "message": "Invalid value. Must be between 0 and 127."
+            "message": "Invalid value. Must be between 0 and 127.",
         }), 400
 
-    cc_number = fader_number + 5  # Map 1-n -> 6-(n+5)
+    cc_config = config.get('cc', {})
+    if fader_number <= max_tracks:
+        track_ccs = cc_config.get('tracks', [])
+        cc_number = track_ccs[fader_number-1] if fader_number-1 < len(track_ccs) else fader_number + 2
+        track_name = config['tracks']['names'][fader_number-1] if fader_number-1 < len(config['tracks']['names']) else f"Track {fader_number}"
+    elif fader_number == max_tracks + 1:
+        cc_number = cc_config.get('headphones', 1)
+        track_name = 'Headphones'
+    elif fader_number == max_tracks + 2:
+        cc_number = cc_config.get('backing', 2)
+        track_name = 'Backing'
+    else:
+        return jsonify({
+            "status": "error",
+            "message": "Invalid fader number",
+        }), 400
+
     success = send_cc_message(cc_number, value)
 
     if success:
         return jsonify({
-            "status": "ok", 
-            "fader": fader_number, 
+            "status": "ok",
+            "fader": fader_number,
             "value": value,
             "cc_number": cc_number,
-            "track_name": config['tracks']['names'][fader_number-1] if fader_number-1 < len(config['tracks']['names']) else f"Track {fader_number}"
+            "track_name": track_name
         })
     return jsonify({
-        "status": "error", 
-        "message": "Failed to send MIDI message"
+        "status": "error",
+        "message": "Failed to send MIDI message",
     }), 500
 
 

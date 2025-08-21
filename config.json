@@ -1,17 +1,20 @@
 {
   "tracks": {
-    "count": 5,
+    "count": 3,
     "names": [
-      "Vocals",
-      "Guitar",
-      "Drums",
-      "Talkback",
-      "Click"
+      "Track 1",
+      "Track 2",
+      "Track 3"
     ]
   },
   "users": {
-    "port_5001": "Fred",
-    "port_5002": "Av"
+    "port_5001": "User 1",
+    "port_5002": "User 2"
   },
-  "last_updated": "2025-08-21T13:05:04.365403"
+  "cc": {
+    "headphones": 1,
+    "backing": 2,
+    "tracks": [3, 4, 5]
+  },
+  "last_updated": null
 }
