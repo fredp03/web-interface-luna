@@ -7,8 +7,17 @@
       "Drums",
       "Talkback",
       "Click"
+    ],
+    "cc": [
+      3,
+      4,
+      5,
+      6,
+      7
     ]
   },
+  "headphones_cc": 1,
+  "backing_cc": 2,
   "users": {
     "port_5001": "Fred",
     "port_5002": "Av"

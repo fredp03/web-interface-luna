@@ -39,8 +39,11 @@ CONFIG_FILE = 'config.json'
 DEFAULT_CONFIG = {
     "tracks": {
         "count": 3,
-        "names": ["Track 1", "Track 2", "Track 3"]
+        "names": ["Track 1", "Track 2", "Track 3"],
+        "cc": [3, 4, 5]
     },
+    "headphones_cc": 1,
+    "backing_cc": 2,
     "users": {
         "port_5001": "User 1",
         "port_5002": "User 2"
@@ -57,8 +60,15 @@ def load_config():
                 # Ensure all required keys exist
                 if 'tracks' not in config:
                     config['tracks'] = DEFAULT_CONFIG['tracks']
+                else:
+                    if 'cc' not in config['tracks']:
+                        config['tracks']['cc'] = DEFAULT_CONFIG['tracks']['cc'][:config['tracks'].get('count', 3)]
                 if 'users' not in config:
                     config['users'] = DEFAULT_CONFIG['users']
+                if 'headphones_cc' not in config:
+                    config['headphones_cc'] = DEFAULT_CONFIG['headphones_cc']
+                if 'backing_cc' not in config:
+                    config['backing_cc'] = DEFAULT_CONFIG['backing_cc']
                 return config
         else:
             # Create default config file
@@ -190,6 +200,14 @@ def get_dashboard_html():
                 min-width: 80px;
                 margin-bottom: 0;
                 font-size: 14px;
+            }
+
+            .track-input input.track-name-input {
+                flex: 1;
+            }
+
+            .track-input input.cc-input {
+                width: 60px;
             }
 
             .user-inputs {
@@ -333,6 +351,14 @@ def get_dashboard_html():
                     <label for="trackCount">Number of Tracks:</label>
                     <input type="number" id="trackCount" min="1" max="8" value="3">
                 </div>
+                <div class="form-group">
+                    <label for="headphonesCC">Headphones CC:</label>
+                    <input type="number" id="headphonesCC" min="0" max="127" value="1">
+                </div>
+                <div class="form-group">
+                    <label for="backingCC">Backing CC:</label>
+                    <input type="number" id="backingCC" min="0" max="127" value="2">
+                </div>
                 <div class="track-inputs" id="trackInputs">
                     <!-- Track name inputs will be generated here -->
                 </div>
@@ -381,11 +407,15 @@ def get_dashboard_html():
             function updateUI() {
                 // Update track count
                 document.getElementById('trackCount').value = currentConfig.tracks.count;
-                
+
+                // Update monitor CC values
+                document.getElementById('headphonesCC').value = currentConfig.headphones_cc;
+                document.getElementById('backingCC').value = currentConfig.backing_cc;
+
                 // Update user names
                 document.getElementById('user5001').value = currentConfig.users.port_5001;
                 document.getElementById('user5002').value = currentConfig.users.port_5002;
-                
+
                 // Generate track inputs
                 generateTrackInputs();
             }
@@ -398,18 +428,32 @@ def get_dashboard_html():
                 for (let i = 1; i <= count; i++) {
                     const trackDiv = document.createElement('div');
                     trackDiv.className = 'track-input';
-                    
+
                     const label = document.createElement('label');
                     label.textContent = `Track ${i}:`;
-                    
+
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.id = `track${i}`;
                     input.placeholder = `Enter name for track ${i}`;
                     input.value = currentConfig.tracks.names[i-1] || `Track ${i}`;
-                    
+                    input.className = 'track-name-input';
+
+                    const ccInput = document.createElement('input');
+                    ccInput.type = 'number';
+                    ccInput.id = `track${i}cc`;
+                    ccInput.min = '0';
+                    ccInput.max = '127';
+                    ccInput.placeholder = `CC`;
+                    const defaultCc = i + 2;
+                    ccInput.value = (currentConfig.tracks.cc && currentConfig.tracks.cc[i-1] !== undefined)
+                        ? currentConfig.tracks.cc[i-1]
+                        : defaultCc;
+                    ccInput.className = 'cc-input';
+
                     trackDiv.appendChild(label);
                     trackDiv.appendChild(input);
+                    trackDiv.appendChild(ccInput);
                     container.appendChild(trackDiv);
                 }
             }
@@ -423,6 +467,9 @@ def get_dashboard_html():
                 configDiv.innerHTML = `
                     <div class="config-item"><strong>Track Count:</strong> ${currentConfig.tracks.count}</div>
                     <div class="config-item"><strong>Track Names:</strong> ${currentConfig.tracks.names.join(', ')}</div>
+                    <div class="config-item"><strong>Track CCs:</strong> ${currentConfig.tracks.cc.join(', ')}</div>
+                    <div class="config-item"><strong>Headphones CC:</strong> ${currentConfig.headphones_cc}</div>
+                    <div class="config-item"><strong>Backing CC:</strong> ${currentConfig.backing_cc}</div>
                     <div class="config-item"><strong>Port 5001 User:</strong> ${currentConfig.users.port_5001}</div>
                     <div class="config-item"><strong>Port 5002 User:</strong> ${currentConfig.users.port_5002}</div>
                     <div class="config-item"><strong>Last Updated:</strong> ${lastUpdated}</div>
@@ -436,17 +483,23 @@ def get_dashboard_html():
                 try {
                     const trackCount = parseInt(document.getElementById('trackCount').value);
                     const trackNames = [];
-                    
+                    const trackCC = [];
+
                     for (let i = 1; i <= trackCount; i++) {
                         const trackName = document.getElementById(`track${i}`).value || `Track ${i}`;
                         trackNames.push(trackName);
+                        const ccVal = parseInt(document.getElementById(`track${i}cc`).value) || i + 2;
+                        trackCC.push(ccVal);
                     }
 
                     const config = {
                         tracks: {
                             count: trackCount,
-                            names: trackNames
+                            names: trackNames,
+                            cc: trackCC
                         },
+                        headphones_cc: parseInt(document.getElementById('headphonesCC').value) || 1,
+                        backing_cc: parseInt(document.getElementById('backingCC').value) || 2,
                         users: {
                             port_5001: document.getElementById('user5001').value || 'User 1',
                             port_5002: document.getElementById('user5002').value || 'User 2'
@@ -506,48 +559,70 @@ def save_config_endpoint():
     """Save new configuration."""
     try:
         data = request.get_json()
-        
+
         if not data:
             return jsonify({
                 "status": "error",
-                "message": "No data provided"
+                "message": "No data provided",
             }), 400
-        
+
         # Validate data structure
-        if 'tracks' not in data or 'users' not in data:
-            return jsonify({
-                "status": "error",
-                "message": "Invalid data structure"
-            }), 400
-        
+        required_top = ['tracks', 'users', 'headphones_cc', 'backing_cc']
+        for key in required_top:
+            if key not in data:
+                return jsonify({
+                    "status": "error",
+                    "message": f"Missing field: {key}",
+                }), 400
+
         # Validate tracks
         tracks = data['tracks']
-        if 'count' not in tracks or 'names' not in tracks:
+        if 'count' not in tracks or 'names' not in tracks or 'cc' not in tracks:
             return jsonify({
                 "status": "error",
-                "message": "Invalid tracks data"
+                "message": "Invalid tracks data",
             }), 400
-        
+
         if not isinstance(tracks['count'], int) or tracks['count'] < 1 or tracks['count'] > 8:
             return jsonify({
                 "status": "error",
-                "message": "Track count must be between 1 and 8"
+                "message": "Track count must be between 1 and 8",
             }), 400
-        
+
         if not isinstance(tracks['names'], list) or len(tracks['names']) != tracks['count']:
             return jsonify({
                 "status": "error",
-                "message": "Track names must be a list matching track count"
+                "message": "Track names must be a list matching track count",
             }), 400
-        
+
+        if not isinstance(tracks['cc'], list) or len(tracks['cc']) != tracks['count']:
+            return jsonify({
+                "status": "error",
+                "message": "Track CCs must be a list matching track count",
+            }), 400
+
+        for cc_val in tracks['cc']:
+            if not isinstance(cc_val, int) or cc_val < 0 or cc_val > 127:
+                return jsonify({
+                    "status": "error",
+                    "message": "Track CC values must be 0-127",
+                }), 400
+
+        for field in ['headphones_cc', 'backing_cc']:
+            if not isinstance(data[field], int) or data[field] < 0 or data[field] > 127:
+                return jsonify({
+                    "status": "error",
+                    "message": f"{field} must be 0-127",
+                }), 400
+
         # Validate users
         users = data['users']
         if 'port_5001' not in users or 'port_5002' not in users:
             return jsonify({
                 "status": "error",
-                "message": "Invalid users data"
+                "message": "Invalid users data",
             }), 400
-        
+
         # Save configuration
         if save_config(data):
             return jsonify({
@@ -558,16 +633,15 @@ def save_config_endpoint():
         else:
             return jsonify({
                 "status": "error",
-                "message": "Failed to save configuration"
+                "message": "Failed to save configuration",
             }), 500
-    
+
     except Exception as e:
         logger.error(f"Error in save_config_endpoint: {e}")
         return jsonify({
             "status": "error",
             "message": str(e)
         }), 500
-
 @dashboard_app.route('/api/status')
 def dashboard_status():
     """Get dashboard status."""
