@@ -107,39 +107,6 @@ def initialize_midi():
     return True
 
 
-def send_mcu_fader_message(fader_number, value):
-    """Send MCU fader control message via MIDI pitch bend."""
-    if not midi_out:
-        logger.error("MIDI output not initialized")
-        return False
-    
-    try:
-        # MCU uses pitch bend messages for faders
-        # Channel mapping: Fader 1 = Channel 0, Fader 2 = Channel 1, Fader 3 = Channel 2
-        channel = fader_number - 1
-        
-        # Convert 7-bit value (0-127) to 14-bit pitch bend value (-8192 to 8191)
-        # MCU expects the full 14-bit range for fader control
-        # mido uses signed pitch bend values: -8192 to 8191
-        pitch_value = int((value / 127.0) * 16383) - 8192
-        
-        # Create pitch bend message
-        # mido handles the LSB/MSB split internally
-        msg = Message('pitchwheel', channel=channel, pitch=pitch_value)
-        
-        # Send MIDI message
-        midi_out.send(msg)
-        
-        logger.info(f"Sent MCU fader {fader_number} (ch {channel}): value={value} "
-                   f"(pitch_value: {pitch_value})")
-        
-        return True
-
-    except Exception as e:
-        logger.error(f"Error sending MIDI message: {e}")
-        return False
-
-
 def send_cc_message(control_number, value, channel=0):
     """Send a standard MIDI control change message."""
     if not midi_out:
@@ -163,6 +130,15 @@ def load_index_html(port=None):
     config = load_config()
     track_count = config['tracks']['count']
     track_names = config['tracks']['names']
+
+    # Build dynamic track-related structures based on track configuration
+    track_to_fader = {}
+    track_volumes = {}
+    for i in range(track_count):
+        name = track_names[i] if i < len(track_names) else f"Track {i+1}"
+        track_to_fader[name] = i + 1
+        track_volumes[name] = 0
+    active_fader_name = next(iter(track_to_fader)) if track_to_fader else ''
     
     # Determine user name based on port
     if port == PORT:
@@ -217,7 +193,12 @@ def load_index_html(port=None):
             pattern = r'<div class="available-tracks">.*?</div>\s*<div data-layer="Monitor Buttons"'
             replacement = f'<div class="available-tracks">\n{tracks_html}        </div>\n        <div data-layer="Monitor Buttons"'
             html_content = re.sub(pattern, replacement, html_content, flags=re.DOTALL)
-            
+
+            # Inject dynamic track configuration for JavaScript
+            html_content = html_content.replace('__TRACK_TO_FADER__', json.dumps(track_to_fader))
+            html_content = html_content.replace('__TRACK_VOLUMES__', json.dumps(track_volumes))
+            html_content = html_content.replace('__ACTIVE_FADER_NAME__', json.dumps(active_fader_name))
+
             return html_content
     except FileNotFoundError:
         # Generate dynamic HTML based on configuration
@@ -327,14 +308,8 @@ def control_fader(fader_number, value):
             "message": "Invalid value. Must be between 0 and 127."
         }), 400
     
-    # Send MIDI message based on fader number
-    if fader_number in [1, 2, 3]:
-        success = send_mcu_fader_message(fader_number, value)
-    elif fader_number <= max_tracks:
-        # For additional tracks beyond 3, use CC messages
-        success = send_cc_message(fader_number + 3, value)
-    else:
-        success = False
+    # Send MIDI CC message for all faders
+    success = send_cc_message(fader_number, value)
     
     if success:
         return jsonify({

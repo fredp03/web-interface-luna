@@ -7,8 +7,7 @@ A web-based virtual MIDI controller that implements Mackie Control Universal (MC
 This application creates a virtual MIDI output port and provides:
 - A Flask web server with HTTP endpoints for controlling five faders
 - A simple web interface with sliders that send MIDI commands to LUNA
-- Proper MCU protocol implementation using pitch-bend messages for track faders
-  and MIDI CC messages for Backing and Headphones levels
+- Uses MIDI control change (CC) messages for all faders
 
 ## Why use this?
 
@@ -89,9 +88,8 @@ The MIDI port name can be configured in two ways:
 ## Usage
 
 ### Web Interface
-- Use the sliders labeled **Fader 1**, **Fader 2**, **Fader 3**, **Backing**, and **Headphones**
-- Faders 1‑3 control the corresponding track faders in LUNA
-- The Backing and Headphones sliders send MIDI CC4 and CC5 messages
+- Use the sliders labeled with track names
+- Each fader sends a MIDI CC message where the control number matches its fader number (Fader 1 → CC1, etc.)
 - Values range from 0-127 (MIDI standard)
 - The current value is displayed next to each slider
 
@@ -107,10 +105,10 @@ curl "http://localhost:5001/api/fader/2/64"
 
 # Set fader 3 to minimum (0)
 curl "http://localhost:5001/api/fader/3/0"
-# Set Backing level (fader 4) to 80
+# Set fader 4 to 80
 curl "http://localhost:5001/api/fader/4/80"
 
-# Set Headphones level (fader 5) to 100
+# Set fader 5 to 100
 curl "http://localhost:5001/api/fader/5/100"
 ```
 
@@ -148,11 +146,9 @@ curl "http://localhost:5001/api/fader/5/100"
 
 ## Technical Details
 
-- **MIDI Protocol**: Implements MCU fader control using pitch-bend messages (0xE0 + channel)
-- **Channels**: Fader 1 = Channel 0, Fader 2 = Channel 1, Fader 3 = Channel 2
-  (pitch bend). Backing (Fader 4) uses MIDI CC4 and Headphones (Fader 5)
-  uses MIDI CC5 on channel 0
-- **Value Encoding**: 14-bit values split into LSB and MSB bytes
+- **MIDI Protocol**: Uses MIDI control change messages (CC) for all faders
+- **Channels**: CC messages are sent on channel 0 by default
+- **Value Encoding**: Standard 7-bit values (0-127)
 - **Port**: Web servers run on `http://localhost:5001` and `http://localhost:5002`
 
 ## License
