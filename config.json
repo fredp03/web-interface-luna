@@ -1,20 +1,15 @@
 {
   "tracks": {
-    "count": 8,
+    "count": 3,
     "names": [
       "Vocals",
-      "Guitar",
-      "Drums",
-      "Snare",
-      "Click",
-      "Track 6",
-      "Track 7",
-      "Track 8"
+      "Backing",
+      "Talkback"
     ]
   },
   "users": {
     "port_5001": "Fred",
     "port_5002": "Av"
   },
-  "last_updated": "2025-08-22T15:41:56.041997"
+  "last_updated": "2025-08-22T17:28:23.078561"
 }
