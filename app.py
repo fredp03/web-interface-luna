@@ -19,6 +19,7 @@ import threading
 
 # Configuration
 MIDI_PORT_NAME = os.getenv('MIDI_PORT', 'IAC Driver Bus 1')
+MIDI_PORT_NAME_SECOND = os.getenv('MIDI_PORT2', 'IAC Driver Bus 2')
 HOST = '0.0.0.0'  # Listen on all network interfaces for mobile access
 PORT = int(os.getenv('PORT', 5001))  # Main server port
 SECOND_PORT = int(os.getenv('PORT2', 5002))  # Secondary server port
@@ -38,8 +39,9 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 cc_app = Flask(__name__ + '_cc')
 
-# Global MIDI output port
+# Global MIDI output ports
 midi_out = None
+midi_out_cc = None
 
 def load_config():
     """Load configuration from JSON file created by dashboard."""
@@ -75,47 +77,50 @@ def load_config():
 
 
 def initialize_midi():
-    """Initialize virtual MIDI output port"""
-    global midi_out
-    
+    """Initialize virtual MIDI output ports for both servers."""
+    global midi_out, midi_out_cc
+
     try:
         # List available MIDI output ports
         available_ports = mido.get_output_names()
         logger.info(f"Available MIDI ports: {available_ports}")
-        
-        # Try to open the specified port
-        if MIDI_PORT_NAME in available_ports:
-            midi_out = mido.open_output(MIDI_PORT_NAME)
-            logger.info(f"Successfully opened MIDI port: {MIDI_PORT_NAME}")
-        else:
-            # If the exact name isn't found, try to find a partial match
-            matching_ports = [port for port in available_ports if MIDI_PORT_NAME.lower() in port.lower()]
-            
+
+        def open_port(port_name):
+            if port_name in available_ports:
+                logger.info(f"Successfully opened MIDI port: {port_name}")
+                return mido.open_output(port_name)
+            matching_ports = [p for p in available_ports if port_name.lower() in p.lower()]
             if matching_ports:
-                midi_out = mido.open_output(matching_ports[0])
                 logger.info(f"Opened MIDI port with partial match: {matching_ports[0]}")
-            else:
-                logger.error(f"MIDI port '{MIDI_PORT_NAME}' not found!")
-                logger.error("Please create a virtual MIDI port or check the port name.")
-                logger.error("Available ports: " + ", ".join(available_ports) if available_ports else "None")
-                return False
-                
+                return mido.open_output(matching_ports[0])
+            logger.error(f"MIDI port '{port_name}' not found!")
+            logger.error("Please create a virtual MIDI port or check the port name.")
+            logger.error("Available ports: " + ", ".join(available_ports) if available_ports else "None")
+            return None
+
+        midi_out = open_port(MIDI_PORT_NAME)
+        midi_out_cc = open_port(MIDI_PORT_NAME_SECOND)
+
+        if not midi_out or not midi_out_cc:
+            return False
+
     except Exception as e:
         logger.error(f"Failed to initialize MIDI: {e}")
         return False
-    
+
     return True
 
 
-def send_cc_message(control_number, value, channel=0):
+def send_cc_message(control_number, value, channel=0, midi_port=None):
     """Send a standard MIDI control change message."""
-    if not midi_out:
+    port = midi_port if midi_port else midi_out
+    if not port:
         logger.error("MIDI output not initialized")
         return False
 
     try:
         msg = Message('control_change', channel=channel, control=control_number, value=value)
-        midi_out.send(msg)
+        port.send(msg)
         logger.info(
             f"Sent CC{control_number} on channel {channel}: value={value}"
         )
@@ -308,8 +313,8 @@ def control_fader(fader_number, value):
             "message": "Invalid value. Must be between 0 and 127."
         }), 400
     
-    # Send MIDI CC message for all faders
-    success = send_cc_message(fader_number, value)
+    # Send MIDI CC message for all faders on channel 1 (MIDI channel 1)
+    success = send_cc_message(fader_number, value, channel=0, midi_port=midi_out)
     
     if success:
         return jsonify({
@@ -343,15 +348,14 @@ def control_fader_cc(fader_number, value):
             "message": "Invalid value. Must be between 0 and 127."
         }), 400
 
-    cc_number = fader_number + 5  # Map 1-n -> 6-(n+5)
-    success = send_cc_message(cc_number, value)
+    # Send on second MIDI port, channel 2
+    success = send_cc_message(fader_number, value, channel=1, midi_port=midi_out_cc)
 
     if success:
         return jsonify({
-            "status": "ok", 
-            "fader": fader_number, 
+            "status": "ok",
+            "fader": fader_number,
             "value": value,
-            "cc_number": cc_number,
             "track_name": config['tracks']['names'][fader_number-1] if fader_number-1 < len(config['tracks']['names']) else f"Track {fader_number}"
         })
     return jsonify({
@@ -379,8 +383,8 @@ def get_status_cc():
     """Get MIDI connection status and current configuration for the secondary server."""
     config = load_config()
     return jsonify({
-        "midi_port": MIDI_PORT_NAME,
-        "connected": midi_out is not None,
+        "midi_port": MIDI_PORT_NAME_SECOND,
+        "connected": midi_out_cc is not None,
         "available_ports": mido.get_output_names(),
         "user_name": config['users']['port_5002'],
         "track_count": config['tracks']['count'],
@@ -400,19 +404,21 @@ def get_config_cc():
 
 def cleanup():
     """Clean up MIDI connections"""
-    global midi_out
-    if midi_out:
-        try:
-            midi_out.close()
-            logger.info("MIDI port closed successfully")
-        except Exception as e:
-            logger.error(f"Error closing MIDI port: {e}")
+    global midi_out, midi_out_cc
+    for port in (midi_out, midi_out_cc):
+        if port:
+            try:
+                port.close()
+                logger.info("MIDI port closed successfully")
+            except Exception as e:
+                logger.error(f"Error closing MIDI port: {e}")
 
 
 if __name__ == '__main__':
     try:
         logger.info("Starting Virtual MCU MIDI Controller for LUNA")
         logger.info(f"Looking for MIDI port: {MIDI_PORT_NAME}")
+        logger.info(f"Looking for secondary MIDI port: {MIDI_PORT_NAME_SECOND}")
         
         # Initialize MIDI
         if not initialize_midi():
