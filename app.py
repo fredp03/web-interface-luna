@@ -24,6 +24,10 @@ PORT = int(os.getenv('PORT', 5001))  # Main server port
 SECOND_PORT = int(os.getenv('PORT2', 5002))  # Secondary server port
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
+# MIDI channels (0-indexed: 0 = channel 1, 1 = channel 2)
+PRIMARY_MIDI_CHANNEL = 0
+SECONDARY_MIDI_CHANNEL = 1
+
 # Configuration file path (shared with dashboard)
 CONFIG_FILE = 'config.json'
 
@@ -308,8 +312,8 @@ def control_fader(fader_number, value):
             "message": "Invalid value. Must be between 0 and 127."
         }), 400
     
-    # Send MIDI CC message for all faders
-    success = send_cc_message(fader_number, value)
+    # Send MIDI CC message for all faders on the primary channel
+    success = send_cc_message(fader_number, value, channel=PRIMARY_MIDI_CHANNEL)
     
     if success:
         return jsonify({
@@ -344,7 +348,8 @@ def control_fader_cc(fader_number, value):
         }), 400
 
     cc_number = fader_number + 5  # Map 1-n -> 6-(n+5)
-    success = send_cc_message(cc_number, value)
+    # Use the secondary MIDI channel for CC control
+    success = send_cc_message(cc_number, value, channel=SECONDARY_MIDI_CHANNEL)
 
     if success:
         return jsonify({
