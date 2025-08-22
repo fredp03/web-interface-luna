@@ -24,6 +24,7 @@ HOST = '0.0.0.0'  # Listen on all network interfaces for mobile access
 PORT = int(os.getenv('PORT', 5001))  # Main server port
 SECOND_PORT = int(os.getenv('PORT2', 5002))  # Secondary server port
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+FADER_CC_START = 10  # Base CC number for the first fader
 
 # Configuration file path (shared with dashboard)
 CONFIG_FILE = 'config.json'
@@ -313,8 +314,10 @@ def control_fader(fader_number, value):
             "message": "Invalid value. Must be between 0 and 127."
         }), 400
     
+    # Map fader numbers to sequential CC numbers starting at FADER_CC_START
+    cc_number = FADER_CC_START + fader_number - 1
     # Send MIDI CC message for all faders on channel 1 (MIDI channel 1)
-    success = send_cc_message(fader_number, value, channel=0, midi_port=midi_out)
+    success = send_cc_message(cc_number, value, channel=0, midi_port=midi_out)
     
     if success:
         return jsonify({
@@ -348,8 +351,10 @@ def control_fader_cc(fader_number, value):
             "message": "Invalid value. Must be between 0 and 127."
         }), 400
 
+    # Map fader numbers to sequential CC numbers starting at FADER_CC_START
+    cc_number = FADER_CC_START + fader_number - 1
     # Send on second MIDI port, channel 2
-    success = send_cc_message(fader_number, value, channel=1, midi_port=midi_out_cc)
+    success = send_cc_message(cc_number, value, channel=1, midi_port=midi_out_cc)
 
     if success:
         return jsonify({

@@ -89,7 +89,7 @@ The MIDI port name can be configured in two ways:
 
 ### Web Interface
 - Use the sliders labeled with track names
-- Each fader sends a MIDI CC message where the control number matches its fader number (Fader 1 → CC1, etc.)
+- Each fader sends a MIDI CC message starting at CC10 (Fader 1 → CC10, Fader 2 → CC11, etc.)
 - Values range from 0-127 (MIDI standard)
 - The current value is displayed next to each slider
 

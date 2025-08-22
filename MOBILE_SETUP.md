@@ -43,7 +43,7 @@
 
 ## Advanced Usage:
 You can also control faders via direct URL calls:
-- `http://10.0.0.221:5001/api/fader/1/100` - Set fader 1 to 100 (CC1)
-- `http://10.0.0.221:5001/api/fader/2/64` - Set fader 2 to 64 (CC2)
-- `http://10.0.0.221:5001/api/fader/3/0` - Set fader 3 to 0 (CC3)
-- `http://10.0.0.221:5002/api/fader/1/127` - Set fader 1 to 127 (CC6)
+- `http://10.0.0.221:5001/api/fader/1/100` - Set fader 1 to 100 (CC10)
+- `http://10.0.0.221:5001/api/fader/2/64` - Set fader 2 to 64 (CC11)
+- `http://10.0.0.221:5001/api/fader/3/0` - Set fader 3 to 0 (CC12)
+- `http://10.0.0.221:5002/api/fader/1/127` - Set fader 1 to 127 (CC10)

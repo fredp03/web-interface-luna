@@ -7,11 +7,11 @@ A complete web-based control system for Universal Audio LUNA with a configuratio
 ### Port 5001 - Main MCU Controller
 - Primary LUNA fader control using MIDI CC messages
 - Supports variable number of tracks (1-8)
-- Maps each fader number directly to the same CC number
+- Maps faders to CC numbers starting at 10
 
-### Port 5002 - Secondary CC Controller  
+### Port 5002 - Secondary CC Controller
 - Alternative LUNA control using MIDI CC messages
-- Maps tracks to CC numbers 6-11 (for tracks 1-6)
+- Maps tracks to CC numbers starting at 10
 - Useful for different LUNA setups or DAW configurations
 
 ### Port 5003 - Configuration Dashboard 
