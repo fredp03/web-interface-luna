@@ -163,6 +163,15 @@ def load_index_html(port=None):
     config = load_config()
     track_count = config['tracks']['count']
     track_names = config['tracks']['names']
+
+    # Build dynamic track-related structures based on track configuration
+    track_to_fader = {}
+    track_volumes = {}
+    for i in range(track_count):
+        name = track_names[i] if i < len(track_names) else f"Track {i+1}"
+        track_to_fader[name] = i + 1
+        track_volumes[name] = 0
+    active_fader_name = next(iter(track_to_fader)) if track_to_fader else ''
     
     # Determine user name based on port
     if port == PORT:
@@ -217,7 +226,12 @@ def load_index_html(port=None):
             pattern = r'<div class="available-tracks">.*?</div>\s*<div data-layer="Monitor Buttons"'
             replacement = f'<div class="available-tracks">\n{tracks_html}        </div>\n        <div data-layer="Monitor Buttons"'
             html_content = re.sub(pattern, replacement, html_content, flags=re.DOTALL)
-            
+
+            # Inject dynamic track configuration for JavaScript
+            html_content = html_content.replace('__TRACK_TO_FADER__', json.dumps(track_to_fader))
+            html_content = html_content.replace('__TRACK_VOLUMES__', json.dumps(track_volumes))
+            html_content = html_content.replace('__ACTIVE_FADER_NAME__', json.dumps(active_fader_name))
+
             return html_content
     except FileNotFoundError:
         # Generate dynamic HTML based on configuration

@@ -410,11 +410,7 @@
         let initialMouseY = 0;
         
         // Track volume state
-        let trackVolumes = {
-          'Guitar 1': 0,
-          'Guitar 2': 0,
-          'Bass': 0
-        };
+        let trackVolumes = __TRACK_VOLUMES__;
         
         // Monitor volume state
         let monitorVolumes = {
@@ -424,7 +420,7 @@
         
         // Current active fader type and name
         let activeFaderType = 'track'; // 'track' or 'monitor'
-        let activeFaderName = 'Guitar 1'; // tracks start with Guitar 1 selected
+        let activeFaderName = __ACTIVE_FADER_NAME__; // tracks start with first track selected
         
         let effectValues = {
           reverbDryWet: 50,
@@ -432,11 +428,7 @@
           delayDryWet: 50
         };
 
-        const trackToFader = {
-            'Guitar 1': 1,
-            'Guitar 2': 2,
-            'Bass': 3
-        };
+        const trackToFader = __TRACK_TO_FADER__;
         const monitorToFader = {
             'Backing': 4,
             'Headphones': 5
