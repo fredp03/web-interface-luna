@@ -17,11 +17,10 @@ def monitor_midi():
         
         while True:
             msg = midi_in.receive()
-            if msg.type == 'pitchwheel':
-                # Convert pitch value back to 0-127 range
-                fader_value = int((msg.pitch + 8192) / 16383 * 127)
-                print(f"Received MCU Fader: Channel {msg.channel} (Fader {msg.channel + 1}), "
-                      f"Pitch={msg.pitch}, Value={fader_value}")
+            if msg.type == 'control_change':
+                print(
+                    f"Received CC{msg.control} on channel {msg.channel}: Value={msg.value}"
+                )
             else:
                 print(f"Other MIDI message: {msg}")
                 

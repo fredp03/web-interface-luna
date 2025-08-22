@@ -107,39 +107,6 @@ def initialize_midi():
     return True
 
 
-def send_mcu_fader_message(fader_number, value):
-    """Send MCU fader control message via MIDI pitch bend."""
-    if not midi_out:
-        logger.error("MIDI output not initialized")
-        return False
-    
-    try:
-        # MCU uses pitch bend messages for faders
-        # Channel mapping: Fader 1 = Channel 0, Fader 2 = Channel 1, Fader 3 = Channel 2
-        channel = fader_number - 1
-        
-        # Convert 7-bit value (0-127) to 14-bit pitch bend value (-8192 to 8191)
-        # MCU expects the full 14-bit range for fader control
-        # mido uses signed pitch bend values: -8192 to 8191
-        pitch_value = int((value / 127.0) * 16383) - 8192
-        
-        # Create pitch bend message
-        # mido handles the LSB/MSB split internally
-        msg = Message('pitchwheel', channel=channel, pitch=pitch_value)
-        
-        # Send MIDI message
-        midi_out.send(msg)
-        
-        logger.info(f"Sent MCU fader {fader_number} (ch {channel}): value={value} "
-                   f"(pitch_value: {pitch_value})")
-        
-        return True
-
-    except Exception as e:
-        logger.error(f"Error sending MIDI message: {e}")
-        return False
-
-
 def send_cc_message(control_number, value, channel=0):
     """Send a standard MIDI control change message."""
     if not midi_out:
@@ -341,14 +308,8 @@ def control_fader(fader_number, value):
             "message": "Invalid value. Must be between 0 and 127."
         }), 400
     
-    # Send MIDI message based on fader number
-    if fader_number in [1, 2, 3]:
-        success = send_mcu_fader_message(fader_number, value)
-    elif fader_number <= max_tracks:
-        # For additional tracks beyond 3, use CC messages
-        success = send_cc_message(fader_number + 3, value)
-    else:
-        success = False
+    # Send MIDI CC message for all faders
+    success = send_cc_message(fader_number, value)
     
     if success:
         return jsonify({

@@ -5,9 +5,9 @@ A complete web-based control system for Universal Audio LUNA with a configuratio
 ## System Components
 
 ### Port 5001 - Main MCU Controller
-- Primary LUNA fader control using Mackie Control Universal protocol
-- Supports variable number of tracks (1-8) 
-- Uses pitch bend messages for faders 1-3, CC messages for additional tracks
+- Primary LUNA fader control using MIDI CC messages
+- Supports variable number of tracks (1-8)
+- Maps each fader number directly to the same CC number
 
 ### Port 5002 - Secondary CC Controller  
 - Alternative LUNA control using MIDI CC messages
